@@ -1,0 +1,12 @@
+name: mention — one read-only task step, the reply is posted
+workflow: workflows/mention.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects: {issue: {repo: acme/app, number: 3, title: Question, author: alice}}
+start: {type: comment, body: "@enzarb where is the retry logic?", actor: {login: alice}, subject: {kind: issue, number: 3}}
+stubs:
+  task: [{result: {decision: reply, body: "In `src/retry.rs:12`."}}]
+expect:
+  status: ended:done
+  path: [mention/task, mention/reply, mention/done]
+  outputs: {task: {decision: reply, body: "In `src/retry.rs:12`."}}

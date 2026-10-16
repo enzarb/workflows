@@ -1,0 +1,52 @@
+name: review — a red GitHub Actions check gets a CI-fix round with its log; a Copilot-only failure waits on a person
+workflow: workflows/pull_request.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects:
+    pull_requests: [{repo: acme/app, number: 30, title: "feat: x", head: enzarb/issue-1, base: main}]
+start: {type: pull_request, action: opened, number: 30}
+stubs:
+  context: [{outputs: {context: {merge_base: m0}}}]
+  review/rounds/review: [{result: {verdict: approve, must_fix: [], body: ok, checks: []}, outputs: {review_body: ok}}]
+  review/rounds/ci_fix: [{result: {decision: done, body: "Fixed the flaky test."}, git: {branch: enzarb/issue-1, head: h2, pushed: true}}]
+events:
+  - expect: {at: review/rounds/checks}
+  - fact:
+      fact: ci
+      value:
+        sha: h1
+        state: failure
+        failing:
+          - {name: "Copilot code review", url: "https://github.com/acme/app/runs/1"}
+          - {name: "ci / test", url: "https://github.com/acme/app/actions/runs/5/job/6", log_excerpt: "assertion failed"}
+    # ci_fix → comment → context → review → comment → checks again.
+    expect: {at: review/rounds/checks, effects: [run_step, call_action, run_step, run_step, call_action, refresh_fact, refresh_fact]}
+  - fact:
+      fact: ci
+      value:
+        sha: h2
+        state: failure
+        failing: [{name: "Copilot code review", url: "https://github.com/acme/app/runs/2"}]
+    expect: {at: review/rounds/ci_failed, projection: {reason: ci_failed, column: blocked, needs_you: true, text: "CI is failing on the head · Copilot code review"}}
+  - fact: {fact: ci, value: {sha: h2, state: success}}
+    expect: {at: review/rounds/checks}
+  - fact: {fact: mergeable, value: true}
+    expect: {at: merge/check}
+expect:
+  path:
+    - review/rounds
+    - review/rounds/context
+    - review/rounds/review
+    - review/rounds/post_review
+    - review/rounds/checks
+    - review/rounds/ci_fix
+    - review/rounds/post_ci_fix
+    - review/rounds/context
+    - review/rounds/review
+    - review/rounds/post_review
+    - review/rounds/checks
+    - review/rounds/ci_failed
+    - review/rounds/checks
+    - review/rounds/done
+    - review/done
+    - merge/check

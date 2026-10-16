@@ -1,0 +1,18 @@
+name: epic workflow (the `epics` binding) — even a `ready` triage goes to the breakdown
+workflow: workflows/epic.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects: {issue: {repo: acme/app, number: 20, title: Widgets, author: alice, labels: [epic]}}
+start: {type: issue, action: opened, number: 20, labels: [epic]}
+stubs:
+  triage/triage: [{result: {decision: ready, body: summary}}]
+  breakdown/breakdown:
+    - outputs: {breakdown_plan: "## Sub-issues"}
+      result: {issues: [{key: api, title: API, body: "...", depends_on: []}]}
+events:
+  - fact: {fact: dependencies, value: []}
+  - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect: {at: breakdown/approval}
+  - event: {type: issue, action: closed, number: 20}
+expect:
+  status: ended:closed

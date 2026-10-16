@@ -1,0 +1,29 @@
+version: 1
+description: >-
+  Wait until every issue this one depends on has ended with one of `done_statuses`.
+  An issue without dependencies passes as soon as the engine reports the (empty)
+  `dependencies` fact. A maintainer can start anyway with `/unblock`.
+params:
+  done_statuses: {type: list, items: string, default: [done, merged, released], description: End statuses that count as finished}
+  unblock_command: {type: string, default: unblock}
+start: wait
+nodes:
+  wait:
+    wait:
+      events:
+        - {event: fact, if: "event.fact == 'dependencies'"}
+        - dependency_changed
+        - {event: comment, from: writer, if: "event.command == params.unblock_command"}
+      refresh: [dependencies]
+      reason: blocked_by_dependencies
+      text: "Waiting for the issues this one depends on to finish"
+      column: blocked
+      waiting_on: external
+      actions: [{label: Start anyway, command: unblock}]
+    max_visits: 500
+    next:
+      - {if: "event.type == 'comment'", to: done}
+      - {if: "facts.dependencies | rejectattr('status', 'in', params.done_statuses) | list | length == 0", to: done}
+      # A dependency changed: re-enter to refresh the fact.
+      - {if: "event.type == 'dependency_changed'", to: wait}
+  done: {end: {status: done}}

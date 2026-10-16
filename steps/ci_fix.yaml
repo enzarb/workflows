@@ -1,0 +1,22 @@
+version: 1
+description: Fix the failing CI checks of the pull request head, from their logs (the executor pushes)
+params:
+  prompt: {type: prompt, default: {file: prompts/ci_fix.md}}
+agent:
+  runtime: runtimes/claude-code
+  prompt: {param: prompt}
+inputs:
+  context: {from: outputs.context, type: object, required: false}
+  failing: {from: facts.ci.failing, type: list}
+result:
+  as: ci_fix
+  schema:
+    type: object
+    required: [decision, body]
+    properties:
+      decision: {type: string, enum: [done, blocked]}
+      body: {type: string}
+      checks: {type: array, items: {type: object}}
+# Read-only Actions access so the agent can read the failed logs (`gh run view --log-failed`).
+github: {contents: write, actions: read, checks: read}
+steer: [comment]

@@ -1,0 +1,14 @@
+name: dependencies — a failed dependency keeps the issue blocked until a maintainer /unblock-s it
+workflow: workflows/issue.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects: {issue: {repo: acme/app, number: 9, title: Second part, author: alice}}
+start: {type: issue, action: opened, number: 9}
+events:
+  - fact: {fact: dependencies, value: [{task: t-1, status: failed, ended: true}]}
+    expect: {at: dependencies/wait, projection: {actions: [Start anyway]}}
+  - event: {type: comment, body: /unblock, command: unblock, actor: {login: maint, can_write: true}}
+    expect: {at: start_gate/wait}
+  # The start gate also takes the label.
+  - event: {type: label, action: added, label: plan, actor: {login: maint, can_write: true}}
+    expect: {at: triage/triage, status: running}

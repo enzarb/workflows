@@ -1,0 +1,20 @@
+name: plan — /epic from a writer during plan approval switches to the breakdown
+workflow: workflows/issue.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects: {issue: {repo: acme/app, number: 7, title: Big thing, author: alice}}
+start: {type: issue, action: opened, number: 7}
+stubs:
+  triage/triage: [{result: {decision: ready, body: summary}}]
+  plan/plan: [{outputs: {plan: p}}]
+  breakdown/breakdown:
+    - outputs: {breakdown_plan: "## Sub-issues"}
+      result: {issues: [{key: a, title: A, body: "...", depends_on: []}]}
+events:
+  - fact: {fact: dependencies, value: []}
+  - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect: {at: plan/approval}
+  - event: {type: comment, body: /epic, command: epic, actor: {login: alice, can_write: false}}
+    expect: {at: plan/approval, effects: []}
+  - event: {type: comment, body: /epic, command: epic, actor: {login: maint, can_write: true}}
+    expect: {at: breakdown/approval}

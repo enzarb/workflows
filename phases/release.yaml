@@ -1,0 +1,31 @@
+version: 1
+description: >-
+  After the merge, wait for the release events listed in `when` (`<type>` or
+  `<type>.<action|state>`, e.g. `release.published`, `package.published`,
+  `deployment.success`, `tag.created`, `workflow_run.completed`). With the default
+  `when: []` the task ends as soon as the engine confirms the merge.
+params:
+  when: {type: list, items: string, default: []}
+exits: [failed]
+start: wait
+nodes:
+  wait:
+    wait:
+      events:
+        - {event: fact, if: "event.fact == 'merged'"}
+        - release
+        - package
+        - deployment
+        - tag
+        - workflow_run
+      refresh: [merged]
+      reason: awaiting_release
+      text: "Merged; waiting for {{ params.when | join(', ') }}"
+      column: done
+      waiting_on: external
+    next:
+      - {if: "params.when | length == 0 and event.type == 'fact'", to: done}
+      - {if: "event.type != 'fact' and (event.type in params.when or (event.type ~ '.' ~ (event.action or event.state or event.status)) in params.when)", to: done}
+      - {if: "event.type == 'deployment' and event.state in ['failure', 'error'] and ('deployment.success' in params.when)", to: failed}
+  done: {end: {status: done}}
+  failed: {end: {status: failed}}

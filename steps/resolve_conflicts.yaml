@@ -1,0 +1,19 @@
+version: 1
+description: Merge the base branch into the pull request branch and resolve conflicts (never rebase)
+params:
+  prompt: {type: prompt, default: {file: prompts/resolve_conflicts.md}}
+agent:
+  runtime: runtimes/claude-code
+  prompt: {param: prompt}
+inputs:
+  context: {from: outputs.context, type: object, required: false}
+result:
+  as: resolve
+  schema:
+    type: object
+    required: [decision, body]
+    properties:
+      decision: {type: string, enum: [done, blocked]}
+      body: {type: string}
+github: {contents: write}
+steer: [comment]

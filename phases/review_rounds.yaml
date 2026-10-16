@@ -1,0 +1,185 @@
+version: 1
+description: >-
+  One review cycle of the pull request; the `review` phase runs it and re-runs it on exit
+  `restart`, which resets every cap here (a person's feedback, a new head pushed by someone
+  else, or `/retry`). Internal: use `phases/review`.
+  Review → post → must-fix findings get automatic fix rounds (at most 3, then a person) →
+  wait for CI and mergeability. Red CI (GitHub Actions checks of this repo, minus names starting with `ci_ignore`) gets fix
+  rounds with the failing logs (at most 3); a conflict gets 2 resolution attempts, then a person.
+params:
+  review_prompt: {type: prompt, default: {file: prompts/review.md}}
+  address_prompt: {type: prompt, default: {file: prompts/address.md}}
+  ci_fix_prompt: {type: prompt, default: {file: prompts/ci_fix.md}}
+  resolve_prompt: {type: prompt, default: {file: prompts/resolve_conflicts.md}}
+  ci_ignore: {type: string, default: Copilot, description: Failing checks whose name starts with this are ignored}
+  retry_command: {type: string, default: retry}
+exits: [restart, merged, closed]
+start: context
+nodes:
+  context:
+    step: {use: steps/context}
+    max_visits: 20
+    next: review
+  review:
+    step: {use: steps/review, with: {prompt: {param: review_prompt}}}
+    max_visits: 20
+    next:
+      - {if: "last.exit == 'success' and outputs.review", to: post_review}
+      - {else: human}
+  post_review:
+    action:
+      name: comment
+      args:
+        number: "{{ (subjects.pull_requests | last).number }}"
+        body: "{{ outputs.review.body }}"
+        verdict: "{{ outputs.review.verdict }}"
+    max_visits: 20
+    next:
+      - {if: "outputs.review.must_fix | length > 0", to: address}
+      - {if: "outputs.review.verdict == 'approve'", to: checks}
+      - {else: human}
+
+  # Automatic rounds on enzarb's own findings.
+  address:
+    step: {use: steps/address, with: {prompt: {param: address_prompt}}}
+    max_visits: 3
+    on_limit: round_limit
+    next:
+      - {if: "last.exit == 'success' and outputs.address.decision == 'done' and facts.git.pushed", to: post_address}
+      - {else: human}
+  post_address:
+    action:
+      name: comment
+      args: {number: "{{ (subjects.pull_requests | last).number }}", body: "{{ outputs.address.body }}"}
+    max_visits: 50
+    next: context
+
+  # Approved: wait for CI and mergeability of the head.
+  checks:
+    wait:
+      events: &pr_events
+        - {event: fact, if: "event.fact in ['ci', 'mergeable']"}
+        - ci_status
+        - check_run
+        - workflow_run
+        - {event: comment, if: "not event.actor.bot and not event.command"}
+        - {event: review, if: "not event.actor.bot"}
+        - {event: pull_request, if: "event.action in ['synchronize', 'closed']"}
+      refresh: [ci, mergeable]
+      reason: awaiting_ci
+      text: "Approved by enzarb; waiting for CI and mergeability"
+      column: review
+      waiting_on: external
+    max_visits: 500
+    on_limit: human
+    next:
+      - {if: "event.type == 'pull_request' and event.action == 'closed' and event.merged", to: merged}
+      - {if: "event.type == 'pull_request' and event.action == 'closed'", to: closed}
+      - {if: "event.type == 'pull_request'", to: restart}
+      - {if: "event.type in ['comment', 'review']", to: address_human}
+      - {if: "event.type in ['ci_status', 'check_run', 'workflow_run']", to: checks}
+      - {if: "facts.ci.state == 'failure' and (facts.ci.failing | selectattr('url', 'startingwith', 'https://github.com/' ~ task.repo ~ '/actions/runs/') | rejectattr('name', 'startingwith', params.ci_ignore) | list | length) > 0", to: ci_fix}
+      - {if: "facts.ci.state == 'failure'", to: ci_failed}
+      - {if: "facts.mergeable == false", to: resolve}
+      - {if: "facts.ci.state == 'success' and facts.mergeable", to: done}
+
+  ci_fix:
+    step: {use: steps/ci_fix, with: {prompt: {param: ci_fix_prompt}}}
+    max_visits: 3
+    on_limit: ci_failed
+    next:
+      - {if: "last.exit == 'success' and outputs.ci_fix.decision == 'done' and facts.git.pushed", to: post_ci_fix}
+      - {else: ci_failed}
+  post_ci_fix:
+    action:
+      name: comment
+      args: {number: "{{ (subjects.pull_requests | last).number }}", body: "{{ outputs.ci_fix.body }}"}
+    max_visits: 50
+    next: context
+
+  resolve:
+    step: {use: steps/resolve_conflicts, with: {prompt: {param: resolve_prompt}}}
+    max_visits: 2
+    on_limit: conflict_parked
+    next:
+      - {if: "last.exit == 'success' and outputs.resolve.decision == 'done' and facts.git.pushed", to: context}
+      - {else: resolve}
+
+  # A person's comment or review: one round, then back to waiting (a push restarts the cycle).
+  address_human:
+    step: {use: steps/address, with: {prompt: {param: address_prompt}}}
+    max_visits: 50
+    next:
+      - {if: "last.exit == 'success' and outputs.address.decision == 'done' and facts.git.pushed", to: post_human}
+      - {else: human}
+  post_human:
+    action:
+      name: comment
+      args: {number: "{{ (subjects.pull_requests | last).number }}", body: "{{ outputs.address.body }}"}
+    max_visits: 50
+    next: restart
+
+  # Waits on a person. Feedback starts a round; `/retry` restarts the cycle with fresh caps.
+  human:
+    wait:
+      events: &human_events
+        - {event: comment, if: "not event.actor.bot"}
+        - {event: review, if: "not event.actor.bot"}
+        - {event: pull_request, if: "event.action in ['synchronize', 'closed']"}
+      reason: awaiting_review
+      text: "enzarb's review needs a person: reply with feedback, or /retry"
+      column: review
+      waiting_on: human
+      actions: [{label: Retry, command: retry}]
+    max_visits: 100
+    next: &human_next
+      - {if: "event.type == 'pull_request' and event.action == 'closed' and event.merged", to: merged}
+      - {if: "event.type == 'pull_request' and event.action == 'closed'", to: closed}
+      - {if: "event.type == 'pull_request'", to: restart}
+      - {if: "event.type == 'comment' and event.command == params.retry_command and event.actor.can_write", to: restart}
+      - {if: "event.type == 'review' and event.state == 'approved' and event.actor.can_write", to: checks}
+      - {if: "not event.command", to: address_human}
+  round_limit:
+    wait:
+      events: *human_events
+      reason: round_limit
+      text: "3 automatic fix rounds did not settle the review: reply with feedback, or /retry"
+      column: review
+      waiting_on: human
+      actions: [{label: Retry, command: retry}]
+    max_visits: 100
+    next: *human_next
+  ci_failed:
+    wait:
+      events: *pr_events
+      refresh: [ci]
+      reason: ci_failed
+      text: "CI is failing on the head{% for f in facts.ci.failing %} · {{ f.name }}{% endfor %}"
+      column: blocked
+      waiting_on: human
+      actions: [{label: Retry, command: retry}]
+    max_visits: 500
+    on_limit: human
+    next:
+      - {if: "event.type == 'pull_request' and event.action == 'closed' and event.merged", to: merged}
+      - {if: "event.type == 'pull_request' and event.action == 'closed'", to: closed}
+      - {if: "event.type == 'pull_request'", to: restart}
+      - {if: "event.type == 'comment' and event.command == params.retry_command and event.actor.can_write", to: restart}
+      - {if: "event.type in ['comment', 'review'] and not event.command", to: address_human}
+      - {if: "event.type in ['ci_status', 'check_run', 'workflow_run']", to: ci_failed}
+      - {if: "event.type == 'fact' and facts.ci.state == 'success'", to: checks}
+  conflict_parked:
+    wait:
+      events: *human_events
+      reason: conflict_parked
+      text: "The merge conflict could not be resolved automatically: resolve it, or /retry"
+      column: blocked
+      waiting_on: human
+      actions: [{label: Retry, command: retry}]
+    max_visits: 100
+    next: *human_next
+
+  done: {end: {status: done}}
+  restart: {end: {status: restart}}
+  merged: {end: {status: merged}}
+  closed: {end: {status: closed}}

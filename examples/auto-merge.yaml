@@ -1,0 +1,9 @@
+# Example repo workflow (copy to .enzarb/workflows/pull_request.yaml and use `std/...`
+# references): merge automatically once green, and end only when a release is published.
+version: 1
+description: PR flow that merges automatically when green and waits for the release
+board: board
+phases:
+  - {use: phases/review, exits: {merged: release}, max_entries: 10}
+  - {use: phases/merge, with: {mode: auto_when_green}, exits: {changed: review}, max_entries: 10}
+  - {use: phases/release, with: {when: [release.published]}}

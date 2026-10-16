@@ -1,0 +1,28 @@
+name: review — a merge conflict gets 2 resolution attempts, then waits on a person; /retry starts over
+workflow: workflows/pull_request.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects:
+    pull_requests: [{repo: acme/app, number: 30, title: "feat: x", head: enzarb/issue-1, base: main}]
+start: {type: pull_request, action: opened, number: 30}
+stubs:
+  context: [{outputs: {context: {merge_base: m0}}}]
+  review/rounds/review: [{result: {verdict: approve, must_fix: [], body: ok, checks: []}, outputs: {review_body: ok}}]
+  review/rounds/resolve: [{result: {decision: blocked, body: "Both sides rewrote parse()."}}]
+events:
+  - fact: {fact: ci, value: {sha: h1, state: success}}
+  - fact: {fact: mergeable, value: false}
+    expect:
+      at: review/rounds/conflict_parked
+      effects: [run_step, run_step]
+      projection: {reason: conflict_parked, column: blocked, needs_you: true, actions: [Retry]}
+  - event: {type: comment, body: /retry, command: retry, actor: {login: bob, can_write: false}}
+    expect: {at: review/rounds/conflict_parked, effects: []}
+  - event: {type: comment, body: /retry, command: retry, actor: {login: maint, can_write: true}}
+    expect: {at: review/rounds/checks}
+  # The person resolved it and pushed: the new head is reviewed from scratch.
+  - event: {type: pull_request, action: synchronize, number: 30, head_sha: h5}
+    expect: {at: review/rounds/checks, effects: [run_step, run_step, call_action, refresh_fact, refresh_fact]}
+  - event: {type: pull_request, action: closed, number: 30, merged: false}
+expect:
+  status: ended:closed

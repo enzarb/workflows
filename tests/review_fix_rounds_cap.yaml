@@ -1,0 +1,68 @@
+name: review — must-fix findings get 3 automatic fix rounds, then a person; their feedback resets the cap
+workflow: workflows/pull_request.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects:
+    pull_requests: [{repo: acme/app, number: 30, title: "feat: x", head: enzarb/issue-1, base: main}]
+start: {type: pull_request, action: opened, number: 30}
+stubs:
+  context: [{outputs: {context: {merge_base: m0, affected: [app]}}}]
+  review/rounds/review:
+    - result: {verdict: request_changes, must_fix: ["src/a.rs:1 unwrap"], body: "1. unwrap", checks: []}
+      outputs: {review_body: "1. unwrap"}
+  review/rounds/address: [{result: {decision: done, body: fixed}, git: {branch: enzarb/issue-1, head: h2, pushed: true}}]
+  review/rounds/address_human: [{result: {decision: done, body: "done as asked"}, git: {branch: enzarb/issue-1, head: h9, pushed: true}}]
+events:
+  # review, then 3 x (address, comment, context, review, comment), then the cap.
+  - expect:
+      at: review/rounds/round_limit
+      status: waiting
+      projection: {reason: round_limit, column: review, needs_you: true, actions: [Retry]}
+  - event: {type: comment, body: "Use expect() with a message instead.", actor: {login: maint, can_write: true}}
+    # address_human pushes → restart: a fresh cycle, which runs 3 rounds again.
+    expect: {at: review/rounds/round_limit}
+expect:
+  path:
+    - review/rounds
+    - review/rounds/context
+    - review/rounds/review
+    - review/rounds/post_review
+    - review/rounds/address
+    - review/rounds/post_address
+    - review/rounds/context
+    - review/rounds/review
+    - review/rounds/post_review
+    - review/rounds/address
+    - review/rounds/post_address
+    - review/rounds/context
+    - review/rounds/review
+    - review/rounds/post_review
+    - review/rounds/address
+    - review/rounds/post_address
+    - review/rounds/context
+    - review/rounds/review
+    - review/rounds/post_review
+    - review/rounds/round_limit
+    - review/rounds/address_human
+    - review/rounds/post_human
+    - review/rounds/restart
+    - review/rounds
+    - review/rounds/context
+    - review/rounds/review
+    - review/rounds/post_review
+    - review/rounds/address
+    - review/rounds/post_address
+    - review/rounds/context
+    - review/rounds/review
+    - review/rounds/post_review
+    - review/rounds/address
+    - review/rounds/post_address
+    - review/rounds/context
+    - review/rounds/review
+    - review/rounds/post_review
+    - review/rounds/address
+    - review/rounds/post_address
+    - review/rounds/context
+    - review/rounds/review
+    - review/rounds/post_review
+    - review/rounds/round_limit

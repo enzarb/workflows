@@ -1,0 +1,33 @@
+name: epic — triage says epic, the breakdown is revised and approved, sub-issues are created, the epic ends with its children
+workflow: workflows/issue.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects: {issue: {repo: acme/app, number: 20, title: Widgets everywhere, author: alice}}
+start: {type: issue, action: opened, number: 20}
+stubs:
+  triage/triage: [{result: {decision: epic, body: "Split API and UI."}}]
+  breakdown/breakdown:
+    - outputs: {breakdown_plan: "## Sub-issues v1"}
+      result: {issues: [{key: api, title: Widget API, body: "...", depends_on: []}]}
+    - outputs: {breakdown_plan: "## Sub-issues v2"}
+      result:
+        issues:
+          - {key: api, title: Widget API, body: "...", depends_on: []}
+          - {key: ui, title: Widget UI, body: "...", depends_on: [api]}
+events:
+  - fact: {fact: dependencies, value: []}
+  - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect:
+      at: breakdown/approval
+      projection: {reason: awaiting_approval, column: plan, actions: [Create sub-issues], artifacts: [Breakdown],
+                   text: "Review the breakdown of #20 into 1 sub-issues: comment feedback, or /approve to create them"}
+  - event: {type: comment, body: "Split the UI out too.", actor: {login: maint, can_write: true}}
+    expect: {at: breakdown/approval, effects: [run_step, call_action]}
+  - event: {type: comment, body: /approve, command: approve, actor: {login: maint, can_write: true}}
+    expect: {at: breakdown/children, effects: [call_action], projection: {reason: awaiting_children, column: in_progress}}
+  - event: {type: all_children_ended, statuses: {t-21: done, t-22: done}}
+expect:
+  status: ended:done
+  path: [dependencies/wait, dependencies/done, start_gate/wait, start_gate/done, triage/triage, triage/epic,
+         breakdown/breakdown, breakdown/post, breakdown/approval, breakdown/breakdown, breakdown/post, breakdown/approval,
+         breakdown/create, breakdown/children, breakdown/done]

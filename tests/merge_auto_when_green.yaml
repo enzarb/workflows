@@ -1,0 +1,23 @@
+name: merge — auto_when_green merges without a click, pinned to the green head; release waits for release.published
+workflow: examples/auto-merge.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects:
+    pull_requests: [{repo: acme/app, number: 30, title: "feat: x", head: enzarb/issue-1, base: main}]
+start: {type: pull_request, action: opened, number: 30}
+stubs:
+  context: [{outputs: {context: {merge_base: m0}}}]
+  review/rounds/review: [{result: {verdict: approve, must_fix: [], body: ok, checks: []}, outputs: {review_body: ok}}]
+events:
+  - fact: {fact: mergeable, value: true}
+  - fact: {fact: ci, value: {sha: h1, state: success}}
+    expect: {at: merge/check}
+  - fact: {fact: ci, value: {sha: h1, state: success}}
+    expect: {at: release/wait, effects: [call_action, refresh_fact], projection: {reason: awaiting_release, text: "Merged; waiting for release.published"}}
+  - fact: {fact: merged, value: true}
+    expect: {at: release/wait}
+  - event: {type: release, action: created, tag: v1.2.0}
+    expect: {at: release/wait}
+  - event: {type: release, action: published, tag: v1.2.0}
+expect:
+  status: ended:done

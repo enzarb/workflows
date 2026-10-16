@@ -1,0 +1,15 @@
+# Proposed `.enzarb/workflows.yaml` for enzarb/enzarb (the repo layer of the bindings).
+# It imports the standard library and inherits every library binding unchanged
+# (issues, epics, PRs without an issue, mentions, adopt). Override one by reusing its id,
+# drop one with `{id: <id>, disabled: true}`.
+version: 1
+imports: {std: enzarb/workflows@v1}
+bindings: []
+# For example, to end issue tasks only when a component release is published, commit a
+# repo workflow and point the `issues` binding at it:
+#
+#   bindings:
+#     - {id: issues, on: issue, if: "event.action == 'opened'", use: .enzarb/workflows/issue}
+#
+# with .enzarb/workflows/issue.yaml listing the std phases and
+#   - {use: std/phases/release, with: {when: [release.published]}, exits: {done: {end: done}}}

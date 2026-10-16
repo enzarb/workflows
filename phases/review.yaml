@@ -1,0 +1,37 @@
+version: 1
+description: >-
+  Review the pull request until enzarb approves it, CI is green and it is mergeable.
+  Must-fix findings get automatic fix rounds (3), red GitHub Actions checks get fix rounds
+  with their failing logs (3; checks matching `ci_ignore` never count), merge conflicts get
+  2 resolution attempts; after a cap a person decides. A person's comment or review is
+  addressed, and a new head pushed by someone else is re-reviewed; both reset the caps.
+  Exits: `done` (ready to merge), `merged` (merged outside enzarb), `closed`.
+params:
+  review_prompt: {type: prompt, default: {file: prompts/review.md}}
+  address_prompt: {type: prompt, default: {file: prompts/address.md}}
+  ci_fix_prompt: {type: prompt, default: {file: prompts/ci_fix.md}}
+  resolve_prompt: {type: prompt, default: {file: prompts/resolve_conflicts.md}}
+  ci_ignore: {type: string, default: Copilot, description: Failing checks whose name starts with this never count}
+exits: [merged, closed]
+start: rounds
+nodes:
+  rounds:
+    phase:
+      use: phases/review_rounds
+      with:
+        review_prompt: {param: review_prompt}
+        address_prompt: {param: address_prompt}
+        ci_fix_prompt: {param: ci_fix_prompt}
+        resolve_prompt: {param: resolve_prompt}
+        ci_ignore: {param: ci_ignore}
+    max_visits: 50
+    next:
+      - {if: "exit == 'restart'", to: rounds}
+      - {if: "exit == 'merged'", to: merged}
+      - {if: "exit == 'closed'", to: closed}
+      - {if: "exit == 'done'", to: done}
+      - {else: limit}
+  done: {end: {status: done}}
+  merged: {end: {status: merged}}
+  closed: {end: {status: closed}}
+  limit: {end: {status: limit_reached}}

@@ -1,0 +1,34 @@
+name: merge — human mode shows Merge only when green; a refused merge (head moved) and a new push go back to review
+workflow: workflows/pull_request.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects:
+    pull_requests: [{repo: acme/app, number: 30, title: "feat: x", head: enzarb/issue-1, base: main}]
+start: {type: pull_request, action: opened, number: 30}
+stubs:
+  context: [{outputs: {context: {merge_base: m0}}}]
+  review/rounds/review: [{result: {verdict: approve, must_fix: [], body: ok, checks: []}, outputs: {review_body: ok}}]
+actions:
+  merge_pull_request: [{ok: false, result: {reason: head_moved}}, {ok: true}]
+events:
+  - fact: {fact: mergeable, value: true}
+  - fact: {fact: ci, value: {sha: h1, state: success}}
+    expect: {at: merge/check, projection: {actions: []}}
+  # Green does not merge by itself in human mode.
+  - fact: {fact: ci, value: {sha: h1, state: success}}
+    expect: {at: merge/ready, effects: [], projection: {actions: [Merge], reason: ready_to_merge}}
+  - event: {type: comment, body: /merge, command: merge, actor: {login: maint, can_write: true}}
+    # Refused (head moved): back to a fresh review.
+    expect: {at: review/rounds/checks, effects: [call_action, run_step, run_step, call_action, refresh_fact, refresh_fact]}
+  - fact: {fact: ci, value: {sha: h2, state: success}}
+    expect: {at: merge/check}
+  - event: {type: pull_request, action: synchronize, number: 30, head_sha: h3}
+    expect: {at: review/rounds/checks}
+  - fact: {fact: ci, value: {sha: h3, state: success}}
+    expect: {at: merge/check}
+  - event: {type: check_run, sha: h3, name: test, status: completed, conclusion: success}
+    expect: {at: merge/check, effects: [refresh_fact, refresh_fact]}
+  - fact: {fact: ci, value: {sha: h3, state: success}}
+    expect: {at: merge/ready}
+  - event: {type: comment, body: /merge, command: merge, actor: {login: maint, can_write: true}}
+    expect: {at: release/wait}

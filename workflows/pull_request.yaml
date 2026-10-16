@@ -1,0 +1,7 @@
+version: 1
+description: A pull request that references no issue (opened by a person or adopted) → review → merge (human) → release.
+board: board
+phases:
+  - {use: phases/review, exits: {merged: release}, max_entries: 10}
+  - {use: phases/merge, exits: {changed: review}, max_entries: 10}
+  - {use: phases/release}

@@ -1,0 +1,34 @@
+# Library default bindings: layer 1 of 3 (library, Project `spec.workflows.bindings`,
+# repo `.enzarb/workflows.yaml`). The merged list is ordered repo, Project, library and the
+# first match wins, so the specific bindings come first here. Replace one by reusing its id,
+# remove one with `{id: <id>, disabled: true}`.
+version: 1
+bindings:
+  # An issue opened with the `epic` label is broken down into sub-issues.
+  - id: epics
+    on: issue
+    if: "event.action == 'opened' and 'epic' in (event.labels or [])"
+    use: workflows/epic
+  - id: issues
+    on: issue
+    if: "event.action == 'opened'"
+    use: workflows/issue
+  # First start: the adopt pass creates tasks for open, unworked objects.
+  - id: adopted_prs
+    on: adopted
+    if: "event.subject.kind == 'pull_request'"
+    use: workflows/pull_request
+  - id: adopted_issues
+    on: adopted
+    if: "event.subject.kind == 'issue'"
+    use: workflows/issue
+  # A PR that references an issue joins that issue's task; only the others start one.
+  - id: pull_requests
+    on: pull_request
+    if: "event.action == 'opened' and not event.references"
+    use: workflows/pull_request
+  # `@enzarb ...` on an object without a live task (with a task, the comment goes to it).
+  - id: mentions
+    on: comment
+    if: "'@enzarb' in event.body and not event.actor.bot"
+    use: workflows/mention
