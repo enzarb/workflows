@@ -10,6 +10,8 @@ params:
   method: {type: enum, values: [squash, merge, rebase], default: squash}
   delete_branch: {type: boolean, default: true}
   retry_command: {type: string, default: retry}
+  merge_label: {type: string, default: Merge}
+  retry_label: {type: string, default: Retry}
 exits: [changed, closed]
 start: check
 nodes:
@@ -41,10 +43,10 @@ nodes:
     wait:
       events: *events
       reason: ready_to_merge
-      text: "Ready to merge: CI is green and enzarb approved{{ ' (merging automatically)' if params.mode == 'auto_when_green' else '' }}"
+      text: "Ready to merge: CI is green and {{ instance.bot.handle or 'enzarb' }} approved{{ ' (merging automatically)' if params.mode == 'auto_when_green' else '' }}"
       column: review
       waiting_on: human
-      actions: [{label: Merge, command: merge}]
+      actions: [{label: {param: merge_label}, command: {param: command}}]
     max_visits: 500
     next: *next
   merge:
@@ -70,12 +72,15 @@ nodes:
       text: "The merge failed{{ ': ' ~ last.result.message if last.result.message else '' }}; /retry to check again"
       column: blocked
       waiting_on: human
-      actions: [{label: Retry, command: retry}]
+      actions: [{label: {param: retry_label}, command: {param: retry_command}}]
     next:
       - {if: "event.type == 'pull_request' and event.action == 'closed' and event.merged", to: done}
       - {if: "event.type == 'pull_request' and event.action == 'closed'", to: closed}
       - {if: "event.type == 'pull_request'", to: changed}
       - {else: check}
-  done: {end: {status: done}}
+  # `vars.merged` lets the workflow tell a merge-closed issue from an abandoned one.
+  done:
+    set: {merged: true}
+    end: {status: done}
   changed: {end: {status: changed}}
   closed: {end: {status: closed}}

@@ -23,4 +23,4 @@ events:
     expect: {at: start_gate/wait, projection: {column: backlog}}
 expect:
   status: waiting
-  path: [dependencies/wait, dependencies/wait, dependencies/wait, dependencies/done, start_gate/wait]
+  path: [dependencies/check, dependencies/wait, dependencies/wait, dependencies/wait, dependencies/done, start_gate/wait]

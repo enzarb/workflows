@@ -18,5 +18,10 @@ result:
       body: {type: string}
       checks: {type: array, items: {type: object}}
 # Read-only Actions access so the agent can read the failed logs (`gh run view --log-failed`).
+workspaces:
+  - repo: "{{ task.repo }}"
+    mode: write
+    branch: "{{ (subjects.pull_requests | last).head or facts.git.branch }}"
+    base: "{{ (subjects.pull_requests | last).base or task.default_branch }}"
 github: {contents: write, actions: read, checks: read}
 steer: [comment]

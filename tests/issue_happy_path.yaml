@@ -4,8 +4,9 @@ document: &doc
   task: {repo: acme/app, default_branch: main}
   subjects:
     issue: {repo: acme/app, number: 7, title: Crash on start, author: alice, url: "https://github.com/acme/app/issues/7"}
-    # Linked by the engine when open_pull_request succeeds.
-    pull_requests: [{repo: acme/app, number: 8, title: "fix(app): no crash on start", head: enzarb/issue-7, base: main}]
+# open_pull_request's result is linked as a subject (`subject: true`).
+actions:
+  open_pull_request: [{ok: true, result: {kind: pull_request, number: 8, title: "fix(app): no crash on start", url: "https://github.com/acme/app/pull/8"}}]
 start: {type: issue, action: opened, number: 7}
 stubs:
   triage/triage: [{result: {decision: ready, body: "Null config on start."}}]
@@ -35,7 +36,7 @@ events:
   - event: {type: comment, body: /approve, command: approve, actor: {login: maint, can_write: true}}
     expect:
       at: review/rounds/checks
-      effects: [run_step, run_step, run_step, call_action, run_step, run_step, call_action, refresh_fact, refresh_fact]
+      effects: [run_step, run_step, run_step, call_action, link_subject, run_step, run_step, call_action, refresh_fact, refresh_fact]
       projection: {reason: awaiting_ci, column: review, waiting_on: external, artifacts: [Plan, Review]}
   - fact: {fact: ci, value: {sha: abc, state: success}}
     expect: {at: review/rounds/checks}
@@ -46,18 +47,21 @@ events:
       at: merge/ready
       projection: {reason: ready_to_merge, needs_you: true, actions: [Merge]}
   - event: {type: comment, body: /merge, command: merge, actor: {login: maint, can_write: true}}
-    expect: {at: release/wait, effects: [call_action, refresh_fact]}
-  - fact: {fact: merged, value: true}
+    # `release_when: []` (the default): done at the merge.
+    expect: {effects: [call_action], status: ended:done}
 expect:
   status: ended:done
+  vars: {merged: true, reviewed_sha: abc, fix_rounds: 0}
   outputs: {plan: "## Summary\nGuard the config."}
   path:
+    - dependencies/check
     - dependencies/wait
     - dependencies/done
     - start_gate/wait
     - start_gate/done
     - triage/triage
     - triage/done
+    - plan/check
     - plan/plan
     - plan/post
     - plan/approval
@@ -67,6 +71,7 @@ expect:
     - implement/checks
     - implement/open_pr
     - implement/done
+    - review/init
     - review/rounds
     - review/rounds/context
     - review/rounds/review
@@ -78,5 +83,5 @@ expect:
     - merge/ready
     - merge/merge
     - merge/done
-    - release/wait
+    - release/check
     - release/done

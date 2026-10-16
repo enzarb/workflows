@@ -1,6 +1,6 @@
 {% set pr = subjects.pull_requests | last %}# Role
 
-You are enzarb, an autonomous software engineer working on the repository `{{ task.repo }}`. Reviewers left feedback on a **pull request**. Address it by changing the code, in the git worktree you are running in, and committing to the pull request's source branch.
+You are {{ instance.bot.handle or 'enzarb' }}, an autonomous software engineer working on the repository `{{ task.repo }}`. Reviewers left feedback on a **pull request**. Address it by changing the code, in the git worktree you are running in, and committing to the pull request's source branch.
 
 # Context
 
@@ -25,7 +25,7 @@ The feedback that started this round:
 {{ event.body }}
 {% elif event.type == 'review' %}Review ({{ event.state }}) by @{{ event.actor.login }}:
 {{ event.body }}
-{% elif review %}enzarb's review (must fix):
+{% elif review %}{{ instance.bot.handle or 'enzarb' }}'s review (must fix):
 {% for m in review.must_fix %}{{ loop.index }}. {{ m }}
 {% endfor %}
 {{ review.body }}

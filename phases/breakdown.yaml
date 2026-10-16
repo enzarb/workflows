@@ -6,6 +6,7 @@ params:
   prompt: {type: prompt, default: {file: prompts/breakdown.md}}
   max_subissues: {type: integer, default: 8}
   approve_command: {type: string, default: approve}
+  approve_label: {type: string, default: Create sub-issues, description: Label of the approve button}
 exits: [closed, failed]
 start: breakdown
 nodes:
@@ -30,7 +31,7 @@ nodes:
       text: "Review the breakdown of #{{ subjects.issue.number }} into {{ outputs.breakdown.issues | length }} sub-issues: comment feedback, or /{{ params.approve_command }} to create them"
       column: plan
       waiting_on: human
-      actions: [{label: Create sub-issues, command: approve}]
+      actions: [{label: {param: approve_label}, command: {param: approve_command}}]
     next:
       - {if: "event.type == 'issue'", to: closed}
       - {if: "event.command == params.approve_command and event.actor.can_write", to: create}
@@ -38,12 +39,15 @@ nodes:
   create:
     action:
       name: create_issues
-      # Action args are string templates and there is no `tojson` filter yet: the list is
-      # rendered with MiniJinja's value formatting, which is JSON for these plain values.
       args:
         parent: "{{ subjects.issue.number }}"
         issues: "{{ outputs.breakdown.issues }}"
         footer: "Part of the epic #{{ subjects.issue.number }}"
+      as: children
+      # Each created issue becomes a child of this task: its own task is routed with a
+      # `parent` relation (the library's `issues` binding then forbids nested epics).
+      # `create_issues` returns {issues: [{key, repo, number, url}]}.
+      relate: {kind: parent, from: "result.issues"}
     next:
       - {if: "last.ok", to: children}
       - {else: failed}

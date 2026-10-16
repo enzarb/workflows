@@ -28,6 +28,6 @@ events:
   - event: {type: all_children_ended, statuses: {t-21: done, t-22: done}}
 expect:
   status: ended:done
-  path: [dependencies/wait, dependencies/done, start_gate/wait, start_gate/done, triage/triage, triage/epic,
+  path: [dependencies/check, dependencies/wait, dependencies/done, start_gate/wait, start_gate/done, triage/triage, triage/epic,
          breakdown/breakdown, breakdown/post, breakdown/approval, breakdown/breakdown, breakdown/post, breakdown/approval,
          breakdown/create, breakdown/children, breakdown/done]

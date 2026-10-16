@@ -27,5 +27,10 @@ result:
             name: {type: string}
             status: {type: string, enum: [passed, failed, not_run]}
             reason: {type: string}
+workspaces:
+  - repo: "{{ task.repo }}"
+    mode: write
+    branch: "enzarb/issue-{{ subjects.issue.number }}"
+    base: "{{ task.default_branch }}"
 github: {contents: write}
 steer: [comment]

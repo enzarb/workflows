@@ -3,7 +3,8 @@ workflow: workflows/mention.yaml
 document:
   task: {repo: acme/app, default_branch: main}
   subjects: {issue: {repo: acme/app, number: 3, title: Question, author: alice}}
-start: {type: comment, body: "@enzarb where is the retry logic?", actor: {login: alice}, subject: {kind: issue, number: 3}}
+  instance: {bot: {login: "helper[bot]", handle: helper}, url: "https://enzarb.example"}
+start: {type: comment, body: "@helper where is the retry logic?", mentioned: true, actor: {login: alice}, subject: {kind: issue, number: 3}}
 stubs:
   task: [{result: {decision: reply, body: "In `src/retry.rs:12`."}}]
 expect:

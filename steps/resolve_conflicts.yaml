@@ -15,5 +15,10 @@ result:
     properties:
       decision: {type: string, enum: [done, blocked]}
       body: {type: string}
+workspaces:
+  - repo: "{{ task.repo }}"
+    mode: write
+    branch: "{{ (subjects.pull_requests | last).head or facts.git.branch }}"
+    base: "{{ (subjects.pull_requests | last).base or task.default_branch }}"
 github: {contents: write}
 steer: [comment]

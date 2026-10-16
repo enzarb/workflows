@@ -23,25 +23,30 @@ events:
     expect: {at: review/rounds/round_limit}
 expect:
   path:
+    - review/init
     - review/rounds
     - review/rounds/context
     - review/rounds/review
     - review/rounds/post_review
+    - review/rounds/fix_gate
     - review/rounds/address
     - review/rounds/post_address
     - review/rounds/context
     - review/rounds/review
     - review/rounds/post_review
+    - review/rounds/fix_gate
     - review/rounds/address
     - review/rounds/post_address
     - review/rounds/context
     - review/rounds/review
     - review/rounds/post_review
+    - review/rounds/fix_gate
     - review/rounds/address
     - review/rounds/post_address
     - review/rounds/context
     - review/rounds/review
     - review/rounds/post_review
+    - review/rounds/fix_gate
     - review/rounds/round_limit
     - review/rounds/address_human
     - review/rounds/post_human
@@ -50,19 +55,23 @@ expect:
     - review/rounds/context
     - review/rounds/review
     - review/rounds/post_review
+    - review/rounds/fix_gate
     - review/rounds/address
     - review/rounds/post_address
     - review/rounds/context
     - review/rounds/review
     - review/rounds/post_review
+    - review/rounds/fix_gate
     - review/rounds/address
     - review/rounds/post_address
     - review/rounds/context
     - review/rounds/review
     - review/rounds/post_review
+    - review/rounds/fix_gate
     - review/rounds/address
     - review/rounds/post_address
     - review/rounds/context
     - review/rounds/review
     - review/rounds/post_review
+    - review/rounds/fix_gate
     - review/rounds/round_limit

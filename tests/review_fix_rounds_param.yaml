@@ -1,0 +1,52 @@
+name: "review — max_rounds from the workflow param; a person's comment resets vars.fix_rounds"
+workflow: workflows/pull_request.yaml
+params: {max_rounds: 1}
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects:
+    pull_requests: [{repo: acme/app, number: 30, title: "feat: x", head: enzarb/issue-1, base: main}]
+start: {type: pull_request, action: opened, number: 30}
+stubs:
+  context: [{outputs: {context: {merge_base: m0, head: h1}}}]
+  review/rounds/review:
+    - result: {verdict: request_changes, must_fix: ["src/a.rs:1 unwrap"], body: "1. unwrap", checks: []}
+  review/rounds/address: [{result: {decision: done, body: fixed}, git: {branch: enzarb/issue-1, head: h2, pushed: true}}]
+  review/rounds/address_human: [{result: {decision: done, body: "done as asked"}, git: {branch: enzarb/issue-1, head: h3, pushed: true}}]
+events:
+  - expect:
+      at: review/rounds/round_limit
+      vars: {fix_rounds: 1}
+      projection: {reason: round_limit, text: "1 automatic fix rounds did not settle the review: reply with feedback, or /retry", actions: [Retry]}
+  - event: {type: comment, body: "Use expect() instead.", actor: {login: maint, can_write: true}}
+    # Reset by the person's round: one automatic round again, then the cap.
+    expect: {at: review/rounds/round_limit, vars: {fix_rounds: 1}}
+expect:
+  path:
+    - review/init
+    - review/rounds
+    - review/rounds/context
+    - review/rounds/review
+    - review/rounds/post_review
+    - review/rounds/fix_gate
+    - review/rounds/address
+    - review/rounds/post_address
+    - review/rounds/context
+    - review/rounds/review
+    - review/rounds/post_review
+    - review/rounds/fix_gate
+    - review/rounds/round_limit
+    - review/rounds/address_human
+    - review/rounds/post_human
+    - review/rounds/restart
+    - review/rounds
+    - review/rounds/context
+    - review/rounds/review
+    - review/rounds/post_review
+    - review/rounds/fix_gate
+    - review/rounds/address
+    - review/rounds/post_address
+    - review/rounds/context
+    - review/rounds/review
+    - review/rounds/post_review
+    - review/rounds/fix_gate
+    - review/rounds/round_limit

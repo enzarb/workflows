@@ -17,4 +17,5 @@ events:
   - event: {type: comment, body: /epic, command: epic, actor: {login: alice, can_write: false}}
     expect: {at: plan/approval, effects: []}
   - event: {type: comment, body: /epic, command: epic, actor: {login: maint, can_write: true}}
-    expect: {at: breakdown/approval}
+    # Remembered for the later phases.
+    expect: {at: breakdown/approval, vars: {epic: true}}

@@ -13,9 +13,7 @@ events:
   - fact: {fact: ci, value: {sha: h1, state: success}}
     expect: {at: merge/check}
   - fact: {fact: ci, value: {sha: h1, state: success}}
-    expect: {at: release/wait, effects: [call_action, refresh_fact], projection: {reason: awaiting_release, text: "Merged; waiting for release.published"}}
-  - fact: {fact: merged, value: true}
-    expect: {at: release/wait}
+    expect: {at: release/wait, effects: [call_action], projection: {reason: awaiting_release, text: "Merged; waiting for release.published"}}
   - event: {type: release, action: created, tag: v1.2.0}
     expect: {at: release/wait}
   - event: {type: release, action: published, tag: v1.2.0}

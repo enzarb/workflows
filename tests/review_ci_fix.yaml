@@ -6,7 +6,7 @@ document:
     pull_requests: [{repo: acme/app, number: 30, title: "feat: x", head: enzarb/issue-1, base: main}]
 start: {type: pull_request, action: opened, number: 30}
 stubs:
-  context: [{outputs: {context: {merge_base: m0}}}]
+  context: [{outputs: {context: {merge_base: m0, head: h1}}}, {outputs: {context: {merge_base: m0, head: h2}}}]
   review/rounds/review: [{result: {verdict: approve, must_fix: [], body: ok, checks: []}, outputs: {review_body: ok}}]
   review/rounds/ci_fix: [{result: {decision: done, body: "Fixed the flaky test."}, git: {branch: enzarb/issue-1, head: h2, pushed: true}}]
 events:
@@ -26,14 +26,20 @@ events:
       value:
         sha: h2
         state: failure
-        failing: [{name: "Copilot code review", url: "https://github.com/acme/app/runs/2"}]
-    expect: {at: review/rounds/ci_failed, projection: {reason: ci_failed, column: blocked, needs_you: true, text: "CI is failing on the head · Copilot code review"}}
+        # `ci_ignore` is the case-insensitive regex (?i)copilot: an Actions job named copilot-* does not count either.
+        failing:
+          - {name: "Copilot code review", url: "https://github.com/acme/app/runs/2"}
+          - {name: "copilot-autofix", url: "https://github.com/acme/app/actions/runs/7/job/8"}
+    expect: {at: review/rounds/ci_failed, projection: {reason: ci_failed, column: blocked, needs_you: true, text: "CI is failing on the head · Copilot code review · copilot-autofix"}}
   - fact: {fact: ci, value: {sha: h2, state: success}}
     expect: {at: review/rounds/checks}
   - fact: {fact: mergeable, value: true}
     expect: {at: merge/check}
 expect:
+  # The second review was a delta review from h1; it stored h2.
+  vars: {reviewed_sha: h2}
   path:
+    - review/init
     - review/rounds
     - review/rounds/context
     - review/rounds/review

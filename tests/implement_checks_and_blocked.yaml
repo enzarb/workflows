@@ -4,6 +4,8 @@ document:
   task: {repo: acme/app, default_branch: main}
   subjects: {issue: {repo: acme/app, number: 7, title: Crash, author: alice}}
 start: {type: issue, action: opened, number: 7}
+actions:
+  open_pull_request: [{ok: true, result: {kind: pull_request, number: 8, title: "fix(app): x", url: "https://github.com/acme/app/pull/8"}}]
 stubs:
   triage/triage: [{result: {decision: ready, body: s}}]
   plan/plan: [{outputs: {plan: p}}]
@@ -26,11 +28,11 @@ events:
   - event: {type: comment, body: /retry, command: retry, actor: {login: m, can_write: true}}
     # The review is a plain `comment` with no must-fix items: it waits on a person.
     expect: {at: review/rounds/human, projection: {reason: awaiting_review, needs_you: true}}
+  # Closing the PR without merging ends the task (the workflow's `on:` handler).
   - event: {type: pull_request, action: closed, number: 8, merged: false}
 expect:
   status: ended:closed
-  path: [dependencies/wait, dependencies/done, start_gate/wait, start_gate/done, triage/triage, triage/done,
-         plan/plan, plan/post, plan/approval, plan/done, implement/prepare, implement/implement, implement/checks,
+  path: [dependencies/check, dependencies/wait, dependencies/done, start_gate/wait, start_gate/done, triage/triage, triage/done,
+         plan/check, plan/plan, plan/post, plan/approval, plan/done, implement/prepare, implement/implement, implement/checks,
          implement/implement, implement/blocked, implement/retry, implement/open_pr, implement/done,
-         review/rounds, review/rounds/context, review/rounds/review, review/rounds/post_review, review/rounds/human,
-         review/rounds/closed, review/closed]
+         review/init, review/rounds, review/rounds/context, review/rounds/review, review/rounds/post_review, review/rounds/human]

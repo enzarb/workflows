@@ -31,4 +31,4 @@ events:
   - fact: {fact: ci, value: {sha: h3, state: success}}
     expect: {at: merge/ready}
   - event: {type: comment, body: /merge, command: merge, actor: {login: maint, can_write: true}}
-    expect: {at: release/wait}
+    expect: {status: ended:done}

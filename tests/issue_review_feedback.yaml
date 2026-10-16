@@ -4,7 +4,8 @@ document:
   task: {repo: acme/app, default_branch: main}
   subjects:
     issue: {repo: acme/app, number: 7, title: Crash, author: alice}
-    pull_requests: [{repo: acme/app, number: 8, title: "fix(app): x", head: enzarb/issue-7, base: main}]
+actions:
+  open_pull_request: [{ok: true, result: {kind: pull_request, number: 8, title: "fix(app): x", url: "https://github.com/acme/app/pull/8"}}]
 start: {type: issue, action: opened, number: 7}
 stubs:
   triage/triage: [{result: {decision: ready, body: s}}]
@@ -27,6 +28,5 @@ events:
   - fact: {fact: ci, value: {sha: a2, state: success}}
     expect: {at: merge/ready}
   - event: {type: comment, body: /merge, command: merge, actor: {login: m, can_write: true}}
-  - fact: {fact: merged, value: true}
 expect:
   status: ended:done

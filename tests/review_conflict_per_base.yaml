@@ -1,0 +1,26 @@
+name: "review — conflict attempts are counted per base sha; a moved base gets fresh attempts"
+workflow: workflows/pull_request.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects:
+    pull_requests: [{repo: acme/app, number: 30, title: "feat: x", head: enzarb/issue-1, base: main}]
+start: {type: pull_request, action: opened, number: 30}
+stubs:
+  context:
+    - {outputs: {context: {merge_base: m0, base_sha: b1}}}
+    - {outputs: {context: {merge_base: m0, base_sha: b1}}}
+    - {outputs: {context: {merge_base: m0, base_sha: b2}}}
+  review/rounds/review: [{result: {verdict: approve, must_fix: [], body: ok, checks: []}, outputs: {review_body: ok}}]
+  review/rounds/resolve: [{result: {decision: blocked, body: "Both sides rewrote parse()."}}]
+events:
+  - fact: {fact: ci, value: {sha: h1, state: success}}
+  - fact: {fact: mergeable, value: false}
+    expect: {at: review/rounds/conflict_parked, effects: [run_step, run_step], vars: {conflict_base: b1, conflict_attempts: 3}}
+  # A push to the PR: a fresh cycle, but the base did not move, so no new attempts.
+  - event: {type: pull_request, action: synchronize, number: 30, head_sha: h2}
+  - fact: {fact: mergeable, value: false}
+    expect: {at: review/rounds/conflict_parked, effects: []}
+  # Another push; now the base moved to b2: two fresh attempts.
+  - event: {type: pull_request, action: synchronize, number: 30, head_sha: h3}
+  - fact: {fact: mergeable, value: false}
+    expect: {at: review/rounds/conflict_parked, effects: [run_step, run_step], vars: {conflict_base: b2, conflict_attempts: 3}}

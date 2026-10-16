@@ -19,7 +19,6 @@ events:
   - event: {type: comment, body: /merge, command: merge, actor: {login: carol, can_write: false}}
     expect: {at: merge/ready, effects: []}
   - event: {type: comment, body: /merge, command: merge, actor: {login: maint, can_write: true}}
-    expect: {at: release/wait}
-  - fact: {fact: merged, value: true}
+    expect: {status: ended:done}
 expect:
   status: ended:done

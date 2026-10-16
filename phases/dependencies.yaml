@@ -1,13 +1,20 @@
 version: 1
 description: >-
   Wait until every issue this one depends on has ended with one of `done_statuses`.
-  An issue without dependencies passes as soon as the engine reports the (empty)
-  `dependencies` fact. A maintainer can start anyway with `/unblock`.
+  When the document already lists dependencies and all of them are finished, the phase
+  passes at once (a `decide` node); otherwise it refreshes the fact and waits (an empty
+  fact is indistinguishable from an unknown one, so no dependencies needs the refresh).
+  A maintainer can start anyway with `/unblock`.
 params:
   done_statuses: {type: list, items: string, default: [done, merged, released], description: End statuses that count as finished}
   unblock_command: {type: string, default: unblock}
-start: wait
+start: check
 nodes:
+  check:
+    decide: {}
+    next:
+      - {if: "facts.dependencies and facts.dependencies | rejectattr('status', 'in', params.done_statuses) | list | length == 0", to: done}
+      - {else: wait}
   wait:
     wait:
       events:
@@ -19,7 +26,7 @@ nodes:
       text: "Waiting for the issues this one depends on to finish"
       column: blocked
       waiting_on: external
-      actions: [{label: Start anyway, command: unblock}]
+      actions: [{label: Start anyway, command: {param: unblock_command}}]
     max_visits: 500
     next:
       - {if: "event.type == 'comment'", to: done}

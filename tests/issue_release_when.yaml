@@ -1,0 +1,33 @@
+name: "release_when — after the merge the issue closing (Closes #7) does not end the task; release.published does"
+workflow: workflows/issue.yaml
+params: {release_when: [release.published]}
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects: {issue: {repo: acme/app, number: 7, title: Crash, author: alice}}
+start: {type: issue, action: opened, number: 7}
+stubs:
+  triage/triage: [{result: {decision: ready, body: s}}]
+  plan/plan: [{outputs: {plan: p}}]
+  implement/prepare: [{}]
+  implement/checks: [{}]
+  implement/implement: [{result: {decision: done, title: "fix(app): x", body: b}, git: {branch: enzarb/issue-7, head: a1, pushed: true}}]
+  context: [{outputs: {context: {merge_base: m0, head: a1}}}]
+  review/rounds/review: [{result: {verdict: approve, must_fix: [], body: ok, checks: []}, outputs: {review_body: ok}}]
+actions:
+  open_pull_request: [{ok: true, result: {kind: pull_request, number: 8, title: "fix(app): x"}}]
+events:
+  - fact: {fact: dependencies, value: []}
+  - event: {type: comment, body: /plan, command: plan, actor: {login: m, can_write: true}}
+  - event: {type: comment, body: /approve, command: approve, actor: {login: m, can_write: true}}
+    expect: {at: review/rounds/checks}
+  - fact: {fact: ci, value: {sha: a1, state: success}}
+  - fact: {fact: mergeable, value: true}
+  - fact: {fact: ci, value: {sha: a1, state: success}}
+    expect: {at: merge/ready}
+  - event: {type: comment, body: /merge, command: merge, actor: {login: m, can_write: true}}
+    expect: {at: release/wait, vars: {merged: true}, projection: {reason: awaiting_release, text: "Merged; waiting for release.published"}}
+  - event: {type: issue, action: closed, number: 7}
+    expect: {at: release/wait, status: waiting}
+  - event: {type: release, action: published, tag: v1.0.0}
+expect:
+  status: ended:done

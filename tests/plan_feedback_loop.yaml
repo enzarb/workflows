@@ -23,5 +23,5 @@ events:
   - event: {type: comment, body: /approve, command: approve, actor: {login: maint, can_write: true}}
     expect: {at: implement/prepare, status: running}
 expect:
-  path: [dependencies/wait, dependencies/done, start_gate/wait, start_gate/done, triage/triage, triage/done,
-         plan/plan, plan/post, plan/approval, plan/plan, plan/post, plan/approval, plan/done, implement/prepare]
+  path: [dependencies/check, dependencies/wait, dependencies/done, start_gate/wait, start_gate/done, triage/triage, triage/done,
+         plan/check, plan/plan, plan/post, plan/approval, plan/plan, plan/post, plan/approval, plan/done, implement/prepare]

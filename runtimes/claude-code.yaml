@@ -2,8 +2,8 @@ version: 1
 description: >-
   Claude Code over the Agent Client Protocol, through claude-agent-acp
   (npm @agentclientprotocol/claude-agent-acp), installed with mise. The
-  user's Claude OAuth token is the user-scope secret `claude_token`, which the
-  executor exposes to the agent as CLAUDE_CODE_OAUTH_TOKEN (see README, gaps).
+  user's Claude OAuth token is the user-scope secret `claude_token`, exposed to
+  the agent as CLAUDE_CODE_OAUTH_TOKEN.
 install:
   mise:
     - node@22
@@ -19,4 +19,5 @@ capabilities:
   steering: true
   interactive: true
   structured_output: true
-secrets: [claude_token]
+secrets:
+  - {name: claude_token, scope: user, env: CLAUDE_CODE_OAUTH_TOKEN}
