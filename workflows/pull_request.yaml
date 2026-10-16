@@ -7,6 +7,9 @@ params:
 on:
   # Closing the pull request without merging ends the task anywhere, stopping a running step first.
   - {events: [{event: pull_request, if: "event.action == 'closed' and not event.merged"}], do: "end:closed"}
+  # The pull request merged outside the merge phase (by hand, or by another task): record it and
+  # continue with the release phase, stopping a running step first.
+  - {events: [{event: pull_request, if: "event.action == 'closed' and event.merged and not vars.merged"}], set: {merged: true}, do: "goto:release"}
 phases:
   - {use: phases/review, with: {max_rounds: {param: max_rounds}}, exits: {merged: release}, max_entries: 10}
   - {use: phases/merge, exits: {changed: review}, max_entries: 10}

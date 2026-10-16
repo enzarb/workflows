@@ -17,6 +17,9 @@ on:
   # stopping a running step first. An issue closed by the merge itself does not.
   - {events: [{event: issue, if: "event.action == 'closed' and not vars.merged"}], do: "end:closed"}
   - {events: [{event: pull_request, if: "event.action == 'closed' and not event.merged"}], do: "end:closed"}
+  # The pull request merged outside the merge phase (by hand, or by another task): record it and
+  # continue with the release phase, stopping a running step first.
+  - {events: [{event: pull_request, if: "event.action == 'closed' and event.merged and not vars.merged"}], set: {merged: true}, do: "goto:release"}
   # The epic label added later is remembered for triage and plan.
   - events: [{event: label, from: writer, if: "event.action == 'added' and event.label == params.epic_label and params.epic_allowed"}]
     set: {epic: true}

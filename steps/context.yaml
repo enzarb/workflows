@@ -30,4 +30,4 @@ command:
       > .enzarb/out/context.json
   tools: {mise: [jq@1.7.1]}
 outputs:
-  context: {file: .enzarb/out/context.json}
+  context: {file: .enzarb/out/context.json, format: json}
