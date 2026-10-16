@@ -1,0 +1,17 @@
+name: "on: handler — a PR closed without merging during a fix round stops the agent and ends the task"
+workflow: workflows/pull_request.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects:
+    pull_requests: [{repo: acme/app, number: 30, title: "feat: x", head: carol/x, base: main}]
+start: {type: pull_request, action: opened, number: 30}
+stubs:
+  context: [{outputs: {context: {merge_base: m0, head: c1}}}]
+  review/rounds/review:
+    - result: {verdict: request_changes, must_fix: ["a.rs:1 unwrap"], body: "1. unwrap", checks: []}
+events:
+  - expect: {at: review/rounds/address, status: running}
+  - event: {type: pull_request, action: closed, number: 30, merged: false}
+    expect: {effects: [stop_step], status: ended:closed}
+expect:
+  status: ended:closed

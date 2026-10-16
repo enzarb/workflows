@@ -1,0 +1,17 @@
+# Proposed `.enzarb/workflows.yaml` for enzarb/enzarb (the repo layer of the bindings).
+# It imports the standard library and inherits its bindings (epics, PRs without an issue,
+# mentions, adopt), replacing only `issues`: issue tasks end when a component release is
+# published (tags `<dir>/vX.Y.Z` publish GitHub releases), and enzarb's own review gets
+# 4 automatic fix rounds. Params go through the binding's `with`, so no repo workflow file
+# is needed. Sub-issues of an epic keep `epic_allowed: false`, as in the library binding.
+version: 1
+imports: {std: enzarb/workflows@v1}
+bindings:
+  - id: issues
+    on: issue
+    if: "event.action == 'opened'"
+    use: std/workflows/issue
+    with:
+      release_when: [release.published]
+      max_rounds: 4
+      epic_allowed: "{{ relations | selectattr('kind', 'eq', 'parent') | list | length == 0 }}"

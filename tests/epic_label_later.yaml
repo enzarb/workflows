@@ -1,0 +1,23 @@
+name: epic — the epic label added while waiting to start is remembered in vars and sends the issue to the breakdown
+workflow: workflows/issue.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects: {issue: {repo: acme/app, number: 20, title: Widgets, author: alice}}
+start: {type: issue, action: opened, number: 20}
+stubs:
+  triage/triage: [{result: {decision: ready, body: summary}}]
+  breakdown/breakdown:
+    - outputs: {breakdown_plan: "## Sub-issues"}
+      result: {issues: [{key: api, title: API, body: "...", depends_on: []}]}
+events:
+  - fact: {fact: dependencies, value: []}
+  # A non-writer's label is not trusted.
+  - event: {type: label, action: added, label: epic, actor: {login: carol, can_write: false}}
+    expect: {at: start_gate/wait, vars: {}}
+  - event: {type: label, action: added, label: epic, actor: {login: maint, can_write: true}}
+    expect: {at: start_gate/wait, effects: [], vars: {epic: true}}
+  - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect: {at: breakdown/approval}
+expect:
+  path: [dependencies/check, dependencies/wait, dependencies/done, start_gate/wait, start_gate/done, triage/triage, triage/epic,
+         breakdown/breakdown, breakdown/post, breakdown/approval]

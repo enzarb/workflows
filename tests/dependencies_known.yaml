@@ -1,0 +1,12 @@
+name: "dependencies — dependencies already known to be finished pass at once (decide node)"
+workflow: workflows/issue.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects: {issue: {repo: acme/app, number: 9, title: Standalone, author: alice}}
+  facts: {dependencies: [{task: t-1, status: done, ended: true}]}
+start: {type: issue, action: opened, number: 9}
+events:
+  - expect: {at: start_gate/wait, projection: {reason: awaiting_start, actions: [Start planning]}}
+expect:
+  status: waiting
+  path: [dependencies/check, dependencies/done, start_gate/wait]

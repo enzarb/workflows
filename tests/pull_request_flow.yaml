@@ -1,0 +1,24 @@
+name: PR-only flow — a person's PR (no issue) is reviewed, merged with the Merge button and ends at merged
+workflow: workflows/pull_request.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects:
+    pull_requests: [{repo: acme/app, number: 30, title: "docs: typo", head: carol/typo, base: main, author: carol}]
+start: {type: pull_request, action: opened, number: 30, head: carol/typo, base: main, head_sha: c1}
+stubs:
+  context: [{outputs: {context: {merge_base: m0, head: c1, affected: [], changed_files: [README.md]}}}]
+  review/rounds/review: [{result: {verdict: approve, must_fix: [], body: "LGTM", checks: []}, outputs: {review_body: "LGTM"}}]
+events:
+  - expect: {at: review/rounds/checks}
+  - fact: {fact: mergeable, value: true}
+  - fact: {fact: ci, value: {sha: c1, state: success}}
+    expect: {at: merge/check}
+  - fact: {fact: ci, value: {sha: c1, state: success}}
+    expect: {at: merge/ready, projection: {actions: [Merge], needs_you: true}}
+  # Only writers merge.
+  - event: {type: comment, body: /merge, command: merge, actor: {login: carol, can_write: false}}
+    expect: {at: merge/ready, effects: []}
+  - event: {type: comment, body: /merge, command: merge, actor: {login: maint, can_write: true}}
+    expect: {status: ended:done}
+expect:
+  status: ended:done

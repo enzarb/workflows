@@ -1,0 +1,32 @@
+name: issue — a maintainer's review comment on the PR is addressed, re-reviewed, then merged and released
+workflow: workflows/issue.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects:
+    issue: {repo: acme/app, number: 7, title: Crash, author: alice}
+actions:
+  open_pull_request: [{ok: true, result: {kind: pull_request, number: 8, title: "fix(app): x", url: "https://github.com/acme/app/pull/8"}}]
+start: {type: issue, action: opened, number: 7}
+stubs:
+  triage/triage: [{result: {decision: ready, body: s}}]
+  plan/plan: [{outputs: {plan: p}}]
+  implement/prepare: [{}]
+  implement/checks: [{}]
+  implement/implement: [{result: {decision: done, title: "fix(app): x", body: b}, git: {branch: enzarb/issue-7, head: a1, pushed: true}}]
+  context: [{outputs: {context: {merge_base: m0}}}]
+  review/rounds/review: [{result: {verdict: approve, must_fix: [], body: ok, checks: []}, outputs: {review_body: ok}}]
+  review/rounds/address_human: [{result: {decision: done, body: "Renamed it."}, git: {branch: enzarb/issue-7, head: a2, pushed: true}}]
+events:
+  - fact: {fact: dependencies, value: []}
+  - event: {type: comment, body: /plan, command: plan, actor: {login: m, can_write: true}}
+  - event: {type: comment, body: /approve, command: approve, actor: {login: m, can_write: true}}
+    expect: {at: review/rounds/checks}
+  - event: {type: review, number: 8, state: changes_requested, body: "Rename parse_cfg.", actor: {login: m, can_write: true}}
+    expect: {at: review/rounds/checks, effects: [run_step, call_action, run_step, run_step, call_action, refresh_fact, refresh_fact]}
+  - fact: {fact: ci, value: {sha: a2, state: success}}
+  - fact: {fact: mergeable, value: true}
+  - fact: {fact: ci, value: {sha: a2, state: success}}
+    expect: {at: merge/ready}
+  - event: {type: comment, body: /merge, command: merge, actor: {login: m, can_write: true}}
+expect:
+  status: ended:done

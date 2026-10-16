@@ -1,0 +1,87 @@
+name: issue happy path — /plan, plan approved, implemented, reviewed, merged by a person, released
+workflow: workflows/issue.yaml
+document: &doc
+  task: {repo: acme/app, default_branch: main}
+  subjects:
+    issue: {repo: acme/app, number: 7, title: Crash on start, author: alice, url: "https://github.com/acme/app/issues/7"}
+# open_pull_request's result is linked as a subject (`subject: true`).
+actions:
+  open_pull_request: [{ok: true, result: {kind: pull_request, number: 8, title: "fix(app): no crash on start", url: "https://github.com/acme/app/pull/8"}}]
+start: {type: issue, action: opened, number: 7}
+stubs:
+  triage/triage: [{result: {decision: ready, body: "Null config on start."}}]
+  plan/plan: [{outputs: {plan: "## Summary\nGuard the config."}}]
+  implement/prepare: [{}]
+  implement/implement:
+    - result: {decision: done, title: "fix(app): no crash on start", body: "Closes #7"}
+      git: {branch: enzarb/issue-7, head: abc, pushed: true}
+  implement/checks: [{}]
+  context: [{outputs: {context: {merge_base: m0, head: abc, affected: [app], changed_files: [src/main.rs]}}}]
+  review/rounds/review:
+    - result: {verdict: approve, must_fix: [], body: "LGTM", checks: [{name: cargo test, status: passed}]}
+      outputs: {review_body: "LGTM"}
+events:
+  - expect: {at: dependencies/wait, status: waiting, projection: {reason: blocked_by_dependencies, column: blocked}}
+  - fact: {fact: dependencies, value: []}
+    expect:
+      at: start_gate/wait
+      projection: {reason: awaiting_start, column: backlog, needs_you: true, actions: [Start planning]}
+  - event: {type: comment, body: /plan, command: plan, actor: {login: bob, can_write: false}}
+    expect: {at: start_gate/wait, effects: []}
+  - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect:
+      at: plan/approval
+      effects: [run_step, run_step, call_action]
+      projection: {reason: awaiting_approval, column: plan, actions: [Approve], artifacts: [Plan]}
+  - event: {type: comment, body: /approve, command: approve, actor: {login: maint, can_write: true}}
+    expect:
+      at: review/rounds/checks
+      effects: [run_step, run_step, run_step, call_action, link_subject, run_step, run_step, call_action, refresh_fact, refresh_fact]
+      projection: {reason: awaiting_ci, column: review, waiting_on: external, artifacts: [Plan, Review]}
+  - fact: {fact: ci, value: {sha: abc, state: success}}
+    expect: {at: review/rounds/checks}
+  - fact: {fact: mergeable, value: true}
+    expect: {at: merge/check, effects: [refresh_fact, refresh_fact]}
+  - fact: {fact: ci, value: {sha: abc, state: success}}
+    expect:
+      at: merge/ready
+      projection: {reason: ready_to_merge, needs_you: true, actions: [Merge]}
+  - event: {type: comment, body: /merge, command: merge, actor: {login: maint, can_write: true}}
+    # `release_when: []` (the default): done at the merge.
+    expect: {effects: [call_action], status: ended:done}
+expect:
+  status: ended:done
+  vars: {merged: true, reviewed_sha: abc, fix_rounds: 0}
+  outputs: {plan: "## Summary\nGuard the config."}
+  path:
+    - dependencies/check
+    - dependencies/wait
+    - dependencies/done
+    - start_gate/wait
+    - start_gate/done
+    - triage/triage
+    - triage/done
+    - plan/check
+    - plan/plan
+    - plan/post
+    - plan/approval
+    - plan/done
+    - implement/prepare
+    - implement/implement
+    - implement/checks
+    - implement/open_pr
+    - implement/done
+    - review/init
+    - review/rounds
+    - review/rounds/context
+    - review/rounds/review
+    - review/rounds/post_review
+    - review/rounds/checks
+    - review/rounds/done
+    - review/done
+    - merge/check
+    - merge/ready
+    - merge/merge
+    - merge/done
+    - release/check
+    - release/done

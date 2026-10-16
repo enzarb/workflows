@@ -1,0 +1,15 @@
+name: triage — a duplicate is commented on and ends the task
+workflow: workflows/issue.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects: {issue: {repo: acme/app, number: 7, title: Crash on start, author: alice}}
+start: {type: issue, action: opened, number: 7}
+stubs:
+  triage/triage: [{result: {decision: duplicate, body: "Duplicate of #3."}}]
+events:
+  - fact: {fact: dependencies, value: []}
+  - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect: {effects: [run_step, call_action]}
+expect:
+  status: ended:duplicate
+  path: [dependencies/check, dependencies/wait, dependencies/done, start_gate/wait, start_gate/done, triage/triage, triage/post_duplicate, triage/duplicate]

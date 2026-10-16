@@ -1,0 +1,27 @@
+name: "epic binding (`with: {epic: true}`) — even a `ready` triage goes to the breakdown; sub-issues are related as children"
+workflow: workflows/issue.yaml
+params: {epic: true}
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects: {issue: {repo: acme/app, number: 20, title: Widgets, author: alice, labels: [epic]}}
+start: {type: issue, action: opened, number: 20, labels: [epic]}
+stubs:
+  triage/triage: [{result: {decision: ready, body: summary}}]
+  breakdown/breakdown:
+    - outputs: {breakdown_plan: "## Sub-issues"}
+      result: {issues: [{key: api, title: API, body: "...", depends_on: []}]}
+actions:
+  create_issues: [{ok: true, result: {issues: [{key: api, kind: issue, repo: acme/app, number: 21}]}}]
+events:
+  - fact: {fact: dependencies, value: []}
+  - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect: {at: breakdown/approval, vars: {epic: true}}
+  - event: {type: comment, body: /approve, command: approve, actor: {login: maint, can_write: true}}
+    # The children are related to this task from the create_issues result.
+    expect:
+      at: breakdown/children
+      effects: [call_action, create_relations]
+      outputs: {children: {issues: [{key: api, kind: issue, repo: acme/app, number: 21}]}}
+  - event: {type: issue, action: closed, number: 20}
+expect:
+  status: ended:closed

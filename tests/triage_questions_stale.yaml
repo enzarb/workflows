@@ -1,0 +1,29 @@
+name: triage — questions are posted, go stale after the timer, and the author's answer re-triages
+workflow: workflows/issue.yaml
+params: {stale_after: 2h}
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects: {issue: {repo: acme/app, number: 7, title: It is slow, author: alice}}
+start: {type: issue, action: opened, number: 7}
+stubs:
+  triage/triage:
+    - result: {decision: questions, body: "1. Which page?"}
+    - result: {decision: questions, body: "1. Which browser?"}
+    - result: {decision: ready, body: summary}
+  plan/plan: [{outputs: {plan: p}}]
+events:
+  - fact: {fact: dependencies, value: []}
+  - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect:
+      at: triage/answers
+      effects: [run_step, call_action, set_timer]
+      projection: {reason: awaiting_answers, column: blocked, text: "Waiting for @alice to answer the triage questions"}
+  # A stranger's comment is not an answer.
+  - event: {type: comment, body: "+1", actor: {login: carol}}
+    expect: {at: triage/answers, effects: []}
+  - event: {type: comment, body: "The settings page.", actor: {login: alice}}
+    expect: {at: triage/answers, effects: [run_step, call_action, set_timer]}
+  - timer: true
+    expect: {at: triage/stale, projection: {reason: stale, text: "No answer to the triage questions for 2h; comment to pick it up again"}}
+  - event: {type: comment, body: "Firefox.", actor: {login: alice}}
+    expect: {at: plan/approval}

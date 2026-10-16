@@ -1,0 +1,26 @@
+name: dependencies — blocked until every dependency is done; a dependency change re-checks
+workflow: workflows/issue.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects: {issue: {repo: acme/app, number: 9, title: Second part, author: alice}}
+start: {type: issue, action: opened, number: 9}
+events:
+  - fact: {fact: dependencies, value: [{task: t-1, status: running}, {task: t-2, status: done, ended: true}]}
+    expect:
+      at: dependencies/wait
+      status: waiting
+      projection: {reason: blocked_by_dependencies, column: blocked, waiting_on: external, text: "Waiting for the issues this one depends on to finish"}
+  # Someone without write access cannot unblock.
+  - event: {type: comment, body: /unblock, command: unblock, actor: {login: bob, can_write: false}}
+    expect: {at: dependencies/wait, effects: []}
+  - event: {type: dependency_changed, task: t-1, status: waiting}
+    expect: {at: dependencies/wait, effects: [refresh_fact]}
+  - fact: {fact: dependencies, value: [{task: t-1, status: waiting}, {task: t-2, status: done, ended: true}]}
+    expect: {at: dependencies/wait}
+  - event: {type: dependency_changed, task: t-1, status: done}
+    expect: {effects: [refresh_fact]}
+  - fact: {fact: dependencies, value: [{task: t-1, status: done, ended: true}, {task: t-2, status: done, ended: true}]}
+    expect: {at: start_gate/wait, projection: {column: backlog}}
+expect:
+  status: waiting
+  path: [dependencies/check, dependencies/wait, dependencies/wait, dependencies/wait, dependencies/done, start_gate/wait]
