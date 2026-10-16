@@ -1,0 +1,15 @@
+name: "on: handler — /restart from a writer restarts the review stage (context runs again)"
+workflow: workflows/pull_request.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects:
+    pull_requests: [{repo: acme/app, number: 32, title: "fix: z", head: carol/z, base: main}]
+start: {type: pull_request, action: opened, number: 32}
+stubs:
+  context: [{outputs: {context: {merge_base: m0, head: c1}}}, {outputs: {context: {merge_base: m0, head: c1}}}]
+events:
+  - expect: {at: review/rounds/review, status: running}
+  - event: {type: comment, body: /restart, command: restart, actor: {login: maint, can_write: true}}
+    expect: {at: review/rounds/review, status: running}
+expect:
+  status: running
