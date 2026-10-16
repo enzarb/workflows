@@ -29,5 +29,5 @@ result:
             name: {type: string}
             status: {type: string, enum: [passed, failed, not_run]}
             reason: {type: string, enum: [refused, missing_tool, timeout, not_attempted, covered_by_ci]}
-github: {contents: read, pull_requests: read, actions: read, checks: read}
+github: {contents: read, pull_requests: read, checks: read}
 steer: [comment]

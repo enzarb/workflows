@@ -1,0 +1,16 @@
+name: "on: handler — a PR merged outside the merge phase stops the running step and continues with release"
+workflow: workflows/pull_request.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects:
+    pull_requests: [{repo: acme/app, number: 31, title: "fix: y", head: carol/y, base: main}]
+start: {type: pull_request, action: opened, number: 31}
+stubs:
+  context: [{outputs: {context: {merge_base: m0, head: c1}}}]
+events:
+  - expect: {at: review/rounds/review, status: running}
+  - event: {type: pull_request, action: closed, number: 31, merged: true}
+    expect: {effects: [stop_step]}
+expect:
+  status: ended:done
+  vars: {merged: true}
