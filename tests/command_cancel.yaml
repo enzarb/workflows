@@ -1,0 +1,16 @@
+name: "on: handler — /cancel from a writer (the UI's Cancel) stops the step and cancels the task"
+workflow: workflows/issue.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects: {issue: {repo: acme/app, number: 7, title: Crash, author: alice}}
+start: {type: issue, action: opened, number: 7}
+events:
+  - fact: {fact: dependencies, value: []}
+  - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect: {at: triage/triage, status: running}
+  - event: {type: comment, body: /cancel, command: cancel, actor: {login: rando, can_write: false}}
+    expect: {at: triage/triage, status: running}
+  - event: {type: comment, body: /cancel, command: cancel, actor: {login: maint, can_write: true}}
+    expect: {effects: [stop_step], status: ended:cancelled}
+expect:
+  status: ended:cancelled
