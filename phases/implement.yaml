@@ -65,6 +65,15 @@ nodes:
     max_visits: 5
     next:
       - {if: "last.exit == 'success' and outputs.implement.decision == 'done' and facts.git.pushed", to: open_pr}
+      # The work may already be on the branch (an earlier, interrupted run pushed it), so a
+      # successful retry that pushed nothing new is checked against the base branch.
+      - {if: "last.exit == 'success' and outputs.implement.decision != 'blocked'", to: retry_context}
+      - {else: blocked}
+  retry_context:
+    step: {use: steps/context}
+    max_visits: 5
+    next:
+      - {if: "last.exit == 'success' and (outputs.context.changed_files or []) | length > 0", to: open_pr}
       - {else: blocked}
   done: {end: {status: done}}
   closed: {end: {status: closed}}
