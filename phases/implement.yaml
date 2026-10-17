@@ -70,7 +70,7 @@ nodes:
       - {if: "last.exit == 'success' and outputs.implement.decision != 'blocked'", to: retry_context}
       - {else: blocked}
   retry_context:
-    step: {use: steps/context}
+    step: {use: steps/context, with: {task_branch: true}}
     max_visits: 5
     next:
       - {if: "last.exit == 'success' and (outputs.context.changed_files or []) | length > 0", to: open_pr}

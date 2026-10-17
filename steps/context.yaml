@@ -5,6 +5,7 @@ description: >-
   when the repository has it, else an empty list). Writes .enzarb/out/context.json.
 params:
   base: {type: string, default: "", description: "Base branch; empty means the PR's base, else the default branch"}
+  task_branch: {type: boolean, default: false, description: "Diff the task branch on origin (facts.git.branch) instead of the checked-out HEAD"}
 command:
   # Values from GitHub reach the shell only through `shell_quote`.
   run: |
@@ -13,12 +14,15 @@ command:
     base={{ (params.base or (subjects.pull_requests | last).base or task.default_branch or "main") | shell_quote }}
     git fetch -q origin "$base" || true
     base_sha=$(git rev-parse "origin/$base" 2>/dev/null || true)
-    mb=$(git merge-base HEAD "origin/$base" 2>/dev/null || true)
-    head=$(git rev-parse HEAD)
+    ref=HEAD
+    branch={{ ((facts.git.branch or "") if params.task_branch else "") | shell_quote }}
+    if [ -n "$branch" ] && git fetch -q origin "$branch"; then ref="origin/$branch"; fi
+    mb=$(git merge-base "$ref" "origin/$base" 2>/dev/null || true)
+    head=$(git rev-parse "$ref")
     affected=""
     files=""
     if [ -n "$mb" ]; then
-      files=$(git diff --name-only "$mb...HEAD" | head -n 300)
+      files=$(git diff --name-only "$mb...$ref" | head -n 300)
       if [ -x scripts/monorepo/affected.sh ]; then
         affected=$(scripts/monorepo/affected.sh "$mb" || true)
       fi
