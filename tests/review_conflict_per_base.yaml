@@ -6,7 +6,9 @@ document:
     pull_requests: [{repo: acme/app, number: 30, title: "feat: x", head: enzarb/issue-1, base: main}]
 start: {type: pull_request, action: opened, number: 30}
 stubs:
-  context:
+  context: [{outputs: {context: {merge_base: m0, base_sha: b1}}}]
+  # The refresh before counting a conflict sees where the base is now.
+  review/rounds/conflict_context:
     - {outputs: {context: {merge_base: m0, base_sha: b1}}}
     - {outputs: {context: {merge_base: m0, base_sha: b1}}}
     - {outputs: {context: {merge_base: m0, base_sha: b2}}}
@@ -15,12 +17,12 @@ stubs:
 events:
   - fact: {fact: ci, value: {sha: h1, state: success}}
   - fact: {fact: mergeable, value: false}
-    expect: {at: review/rounds/conflict_parked, effects: [run_step, run_step], vars: {conflict_base: b1, conflict_attempts: 3}}
+    expect: {at: review/rounds/conflict_parked, effects: [run_step, run_step, run_step], vars: {conflict_base: b1, conflict_attempts: 3}}
   # A push to the PR: a fresh cycle, but the base did not move, so no new attempts.
   - event: {type: pull_request, action: synchronize, number: 30, head_sha: h2}
   - fact: {fact: mergeable, value: false}
-    expect: {at: review/rounds/conflict_parked, effects: []}
-  # Another push; now the base moved to b2: two fresh attempts.
+    expect: {at: review/rounds/conflict_parked, effects: [run_step]}
+  # Another push; the base moved to b2 (seen by the refresh before counting): two fresh attempts.
   - event: {type: pull_request, action: synchronize, number: 30, head_sha: h3}
   - fact: {fact: mergeable, value: false}
-    expect: {at: review/rounds/conflict_parked, effects: [run_step, run_step], vars: {conflict_base: b2, conflict_attempts: 3}}
+    expect: {at: review/rounds/conflict_parked, effects: [run_step, run_step, run_step], vars: {conflict_base: b2, conflict_attempts: 3}}

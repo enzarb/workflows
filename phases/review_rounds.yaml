@@ -95,7 +95,7 @@ nodes:
       - {if: "event.type in ['ci_status', 'check_run', 'workflow_run']", to: checks}
       - {if: "facts.ci.state == 'failure' and (facts.ci.failing | selectattr('url', 'startingwith', 'https://github.com/' ~ task.repo ~ '/actions/runs/') | rejectattr('name', 'regex_match', params.ci_ignore) | list | length) > 0", to: ci_fix}
       - {if: "facts.ci.state == 'failure'", to: ci_failed}
-      - {if: "facts.mergeable == false", to: conflict_gate}
+      - {if: "facts.mergeable == false", to: conflict_context}
       - {if: "facts.ci.state == 'success' and facts.mergeable", to: done}
 
   ci_fix:
@@ -112,7 +112,12 @@ nodes:
     max_visits: 50
     next: context
 
-  # Conflict attempts are counted per base sha: a base that moved gets fresh attempts.
+  # Conflict attempts are counted per base sha: a base that moved gets fresh attempts. The
+  # context is refreshed first, so a base that moved since the cycle started is seen.
+  conflict_context:
+    step: {use: steps/context}
+    max_visits: 50
+    next: conflict_gate
   conflict_gate:
     set:
       conflict_attempts: "((vars.conflict_attempts or 0) + 1) if (vars.conflict_base or '') == (outputs.context.base_sha or '') else 1"

@@ -7,6 +7,7 @@ document:
 start: {type: pull_request, action: opened, number: 30}
 stubs:
   context: [{outputs: {context: {merge_base: m0}}}]
+  review/rounds/conflict_context: [{outputs: {context: {merge_base: m0}}}]
   review/rounds/review: [{result: {verdict: approve, must_fix: [], body: ok, checks: []}, outputs: {review_body: ok}}]
   review/rounds/resolve: [{result: {decision: blocked, body: "Both sides rewrote parse()."}}]
 events:
@@ -14,7 +15,7 @@ events:
   - fact: {fact: mergeable, value: false}
     expect:
       at: review/rounds/conflict_parked
-      effects: [run_step, run_step]
+      effects: [run_step, run_step, run_step]
       projection: {reason: conflict_parked, column: blocked, needs_you: true, actions: [Retry]}
   - event: {type: comment, body: /retry, command: retry, actor: {login: bob, can_write: false}}
     expect: {at: review/rounds/conflict_parked, effects: []}
