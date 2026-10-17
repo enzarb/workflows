@@ -2,14 +2,16 @@ version: 1
 description: Answer an @mention with one read-only agent step and post the reply.
 params:
   prompt: {type: prompt, default: {file: prompts/task.md}}
-exits: [failed]
+  retry_command: {type: string, default: retry, description: Command (and button) that runs a failed step again}
+  retry_label: {type: string, default: Retry, description: Label of the retry button}
+exits: []
 start: task
 nodes:
   task:
     step: {use: steps/task, with: {prompt: {param: prompt}}}
     next:
       - {if: "last.exit == 'success' and outputs.task.body", to: reply}
-      - {else: failed}
+      - {else: task_failed}
   reply:
     action:
       name: comment
@@ -18,6 +20,31 @@ nodes:
         body: "{{ outputs.task.body }}"
     next:
       - {if: "last.ok", to: done}
-      - {else: failed}
+      - {else: reply_failed}
   done: {end: {status: done}}
-  failed: {end: {status: failed}}
+  # Answering the mention failed: wait for a writer's /retry (or the Retry button) instead of ending the task.
+  task_failed:
+    wait:
+      events:
+        - {event: comment, from: writer, if: "event.command == params.retry_command"}
+      reason: step_failed
+      text: "Answering the mention failed (details in its session on the task page). /{{ params.retry_command }} to try again"
+      column: blocked
+      waiting_on: human
+      actions: [{label: {param: retry_label}, command: {param: retry_command}}]
+    max_visits: 50
+    next:
+      - {else: task}
+  # Posting the reply failed: wait for a writer's /retry (or the Retry button) instead of ending the task.
+  reply_failed:
+    wait:
+      events:
+        - {event: comment, from: writer, if: "event.command == params.retry_command"}
+      reason: step_failed
+      text: "Posting the reply failed (details in its session on the task page). /{{ params.retry_command }} to try again"
+      column: blocked
+      waiting_on: human
+      actions: [{label: {param: retry_label}, command: {param: retry_command}}]
+    max_visits: 50
+    next:
+      - {else: reply}

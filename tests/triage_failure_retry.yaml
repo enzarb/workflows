@@ -1,0 +1,21 @@
+name: a failed triage step waits for /retry (non-writers ignored), then triages again
+workflow: workflows/issue.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects: {issue: {repo: acme/app, number: 24, title: Crash, author: alice}}
+start: {type: issue, action: opened, number: 24}
+stubs:
+  triage/triage:
+    - {exit: failure}
+    - {result: {decision: ready, body: "Clear."}}
+events:
+  - fact: {fact: dependencies, value: []}
+  - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect:
+      at: triage/triage_failed
+      status: waiting
+      projection: {reason: step_failed, column: blocked, needs_you: true, actions: [Retry]}
+  - event: {type: comment, body: /retry, command: retry, actor: {login: rando, can_write: false}}
+    expect: {at: triage/triage_failed, effects: []}
+  - event: {type: comment, body: /retry, command: retry, actor: {login: maint, can_write: true}}
+    expect: {at: plan/plan, status: running}

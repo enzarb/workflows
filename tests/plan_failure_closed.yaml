@@ -1,0 +1,17 @@
+name: a failed plan step waits for /retry; closing the issue there ends the task
+workflow: workflows/issue.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects: {issue: {repo: acme/app, number: 25, title: Crash, author: alice}}
+start: {type: issue, action: opened, number: 25}
+stubs:
+  triage/triage: [{result: {decision: ready, body: "Clear."}}]
+  plan/plan: [{exit: failure}]
+events:
+  - fact: {fact: dependencies, value: []}
+  - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect: {at: plan/plan_failed, projection: {reason: step_failed, column: blocked}}
+  - event: {type: issue, action: closed, number: 25}
+    expect: {status: ended:closed}
+expect:
+  status: ended:closed
