@@ -6,7 +6,9 @@ description: >-
   `when: []` the phase is done at once.
 params:
   when: {type: list, items: string, default: []}
-exits: [failed]
+  retry_command: {type: string, default: retry, description: Command (and button) that runs a failed step again}
+  retry_label: {type: string, default: Retry, description: Label of the retry button}
+exits: []
 start: check
 nodes:
   check:
@@ -28,6 +30,18 @@ nodes:
       waiting_on: external
     next:
       - {if: "event.type in params.when or (event.type ~ '.' ~ (event.action or event.state or event.status)) in params.when", to: done}
-      - {if: "event.type == 'deployment' and event.state in ['failure', 'error'] and ('deployment.success' in params.when)", to: failed}
+      - {if: "event.type == 'deployment' and event.state in ['failure', 'error'] and ('deployment.success' in params.when)", to: deploy_failed}
   done: {end: {status: done}}
-  failed: {end: {status: failed}}
+  # The deployment failed: wait for a writer's /retry (or the Retry button) instead of ending the task.
+  deploy_failed:
+    wait:
+      events:
+        - {event: comment, from: writer, if: "event.command == params.retry_command"}
+      reason: step_failed
+      text: "The deployment failed (details in its session on the task page). /{{ params.retry_command }} to try again"
+      column: blocked
+      waiting_on: human
+      actions: [{label: {param: retry_label}, command: {param: retry_command}}]
+    max_visits: 50
+    next:
+      - {else: wait}

@@ -1,6 +1,28 @@
 # Changelog
 
-## 1.0.0 (unreleased)
+## 1.1.0
+
+### Changed
+- A failed step no longer ends the task. `triage`, `plan`, `breakdown` (the breakdown and
+  creating the sub-issues), `mention` (the answer and the reply) and a failed deployment in
+  `release` wait in column `blocked` (reason `step_failed`) with a **Retry** button. A
+  writer's `/retry` runs the failed step again; closing the issue still ends the task. New
+  phase params: `retry_command` (default `retry`) and `retry_label` (default `Retry`).
+- `bindings.yaml`: reopening an issue whose task ended starts a new task (`issues` and
+  `epics` match `opened` and `reopened`).
+
+## 1.0.2
+### Added
+- Workflow commands: `/cancel` (also the UI's Cancel) ends the task; `/restart` restarts the
+  current stage (review with a pull request, else implement), also while paused.
+
+## 1.0.1
+### Fixed
+- `steps/context` declares `format: json`.
+- `steps/review` no longer requests `actions: read`.
+- A pull request merged outside the merge phase records `merged` and continues with release.
+
+## 1.0.0
 
 First version of the standard workflow library (ADR-0022 milestone M2): today's compiled
 `issue`, `change_request` and `mention` behaviour expressed as YAML.

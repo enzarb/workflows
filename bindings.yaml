@@ -8,13 +8,15 @@ bindings:
   # itself a sub-issue of an epic).
   - id: epics
     on: issue
-    if: "event.action == 'opened' and 'epic' in (event.labels or []) and (relations | selectattr('kind', 'eq', 'parent') | list | length == 0)"
+    if: "event.action in ['opened', 'reopened'] and 'epic' in (event.labels or []) and (relations | selectattr('kind', 'eq', 'parent') | list | length == 0)"
     use: workflows/issue
     with: {epic: true}
   # A sub-issue an epic created (its task is related as `parent`) cannot become an epic.
+  # Reopening an issue whose task ended starts a new task (an issue with a live task routes
+  # the event to that task instead).
   - id: issues
     on: issue
-    if: "event.action == 'opened'"
+    if: "event.action in ['opened', 'reopened']"
     use: workflows/issue
     with:
       epic_allowed: "{{ relations | selectattr('kind', 'eq', 'parent') | list | length == 0 }}"

@@ -10,7 +10,9 @@ params:
   approve_label: {type: string, default: Approve, description: Label of the approve button}
   epic_command: {type: string, default: epic}
   epic_allowed: {type: boolean, default: true}
-exits: [epic, closed, failed]
+  retry_command: {type: string, default: retry, description: Command (and button) that runs a failed step again}
+  retry_label: {type: string, default: Retry, description: Label of the retry button}
+exits: [epic, closed]
 start: check
 nodes:
   check:
@@ -22,7 +24,7 @@ nodes:
     step: {use: steps/plan, with: {prompt: {param: prompt}, approve_command: {param: approve_command}}}
     next:
       - {if: "last.exit == 'success' and outputs.plan and not last.missing_outputs", to: post}
-      - {else: failed}
+      - {else: plan_failed}
   post:
     action:
       name: comment
@@ -49,4 +51,18 @@ nodes:
     set: {epic: true}
     end: {status: epic}
   closed: {end: {status: closed}}
-  failed: {end: {status: failed}}
+  # Planning failed: wait for a writer's /retry (or the Retry button) instead of ending the task.
+  plan_failed:
+    wait:
+      events:
+        - {event: comment, from: writer, if: "event.command == params.retry_command"}
+        - {event: issue, if: "event.action == 'closed'"}
+      reason: step_failed
+      text: "Planning failed (details in its session on the task page). /{{ params.retry_command }} to try again"
+      column: blocked
+      waiting_on: human
+      actions: [{label: {param: retry_label}, command: {param: retry_command}}]
+    max_visits: 50
+    next:
+      - {if: "event.type == 'issue'", to: closed}
+      - {else: plan}

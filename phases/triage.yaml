@@ -9,14 +9,16 @@ params:
   epic: {type: boolean, default: false, description: Treat the issue as an epic regardless of the triage decision}
   epic_allowed: {type: boolean, default: true, description: Whether the issue may become an epic (false for sub-issues of an epic)}
   stale_after: {type: string, default: 14d, description: "How long to wait for answers before the issue is stale (a duration: 90s, 2h, 14d, 1w)"}
-exits: [epic, duplicate, closed, failed]
+  retry_command: {type: string, default: retry, description: Command (and button) that runs a failed step again}
+  retry_label: {type: string, default: Retry, description: Label of the retry button}
+exits: [epic, duplicate, closed]
 start: triage
 nodes:
   triage:
     step: {use: steps/triage, with: {prompt: {param: prompt}, epic_allowed: {param: epic_allowed}}}
     max_visits: 6
     next:
-      - {if: "last.exit != 'success' or not outputs.triage", to: failed}
+      - {if: "last.exit != 'success' or not outputs.triage", to: triage_failed}
       - {if: "outputs.triage.decision == 'duplicate'", to: post_duplicate}
       - {if: "(params.epic or vars.epic) and params.epic_allowed", to: epic}
       - {if: "outputs.triage.decision == 'questions'", to: post_questions}
@@ -65,4 +67,18 @@ nodes:
     end: {status: epic}
   duplicate: {end: {status: duplicate}}
   closed: {end: {status: closed}}
-  failed: {end: {status: failed}}
+  # Triage failed: wait for a writer's /retry (or the Retry button) instead of ending the task.
+  triage_failed:
+    wait:
+      events:
+        - {event: comment, from: writer, if: "event.command == params.retry_command"}
+        - {event: issue, if: "event.action == 'closed'"}
+      reason: step_failed
+      text: "Triage failed (details in its session on the task page). /{{ params.retry_command }} to try again"
+      column: blocked
+      waiting_on: human
+      actions: [{label: {param: retry_label}, command: {param: retry_command}}]
+    max_visits: 50
+    next:
+      - {if: "event.type == 'issue'", to: closed}
+      - {else: triage}

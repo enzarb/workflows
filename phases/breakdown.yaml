@@ -7,7 +7,9 @@ params:
   max_subissues: {type: integer, default: 8}
   approve_command: {type: string, default: approve}
   approve_label: {type: string, default: Create sub-issues, description: Label of the approve button}
-exits: [closed, failed]
+  retry_command: {type: string, default: retry, description: Command (and button) that runs a failed step again}
+  retry_label: {type: string, default: Retry, description: Label of the retry button}
+exits: [closed]
 start: breakdown
 nodes:
   breakdown:
@@ -16,7 +18,7 @@ nodes:
       with: {prompt: {param: prompt}, max_subissues: {param: max_subissues}, approve_command: {param: approve_command}}
     next:
       - {if: "last.exit == 'success' and outputs.breakdown.issues and outputs.breakdown_plan", to: post}
-      - {else: failed}
+      - {else: breakdown_failed}
   post:
     action:
       name: comment
@@ -50,7 +52,7 @@ nodes:
       relate: {kind: parent, from: "result.issues"}
     next:
       - {if: "last.ok", to: children}
-      - {else: failed}
+      - {else: create_failed}
   children:
     wait:
       events:
@@ -65,4 +67,33 @@ nodes:
       - {if: "event.type == 'all_children_ended'", to: done}
   done: {end: {status: done}}
   closed: {end: {status: closed}}
-  failed: {end: {status: failed}}
+  # The breakdown failed: wait for a writer's /retry (or the Retry button) instead of ending the task.
+  breakdown_failed:
+    wait:
+      events:
+        - {event: comment, from: writer, if: "event.command == params.retry_command"}
+        - {event: issue, if: "event.action == 'closed'"}
+      reason: step_failed
+      text: "The breakdown failed (details in its session on the task page). /{{ params.retry_command }} to try again"
+      column: blocked
+      waiting_on: human
+      actions: [{label: {param: retry_label}, command: {param: retry_command}}]
+    max_visits: 50
+    next:
+      - {if: "event.type == 'issue'", to: closed}
+      - {else: breakdown}
+  # Creating the sub-issues failed: wait for a writer's /retry (or the Retry button) instead of ending the task.
+  create_failed:
+    wait:
+      events:
+        - {event: comment, from: writer, if: "event.command == params.retry_command"}
+        - {event: issue, if: "event.action == 'closed'"}
+      reason: step_failed
+      text: "Creating the sub-issues failed (details in its session on the task page). /{{ params.retry_command }} to try again"
+      column: blocked
+      waiting_on: human
+      actions: [{label: {param: retry_label}, command: {param: retry_command}}]
+    max_visits: 50
+    next:
+      - {if: "event.type == 'issue'", to: closed}
+      - {else: create}
