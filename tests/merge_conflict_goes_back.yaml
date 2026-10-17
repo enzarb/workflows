@@ -1,0 +1,19 @@
+name: merge — GitHub refusing a conflicted PR (message only) goes back to review, not to merge_failed
+workflow: workflows/pull_request.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects:
+    pull_requests: [{repo: acme/app, number: 30, title: "feat: x", head: enzarb/issue-1, base: main}]
+start: {type: pull_request, action: opened, number: 30}
+stubs:
+  context: [{outputs: {context: {merge_base: m0}}}]
+  review/rounds/review: [{result: {verdict: approve, must_fix: [], body: ok, checks: []}, outputs: {review_body: ok}}]
+actions:
+  merge_pull_request: [{ok: false, result: {error: "Pull Request has merge conflicts"}}]
+events:
+  - fact: {fact: mergeable, value: true}
+  - fact: {fact: ci, value: {sha: h1, state: success}}
+  - fact: {fact: ci, value: {sha: h1, state: success}}
+    expect: {at: merge/ready}
+  - event: {type: comment, body: /merge, command: merge, actor: {login: maint, can_write: true}}
+    expect: {at: review/rounds/checks}
