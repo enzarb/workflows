@@ -78,6 +78,7 @@ nodes:
         - check_run
         - workflow_run
         - {event: comment, if: "not event.actor.bot and not event.command"}
+        - {event: comment, if: "event.command == params.retry_command and event.actor.can_write"}
         - {event: review, if: "not event.actor.bot"}
         - {event: pull_request, if: "event.action in ['synchronize', 'closed']"}
       refresh: [ci, mergeable]
@@ -91,6 +92,8 @@ nodes:
       - {if: "event.type == 'pull_request' and event.action == 'closed' and event.merged", to: merged}
       - {if: "event.type == 'pull_request' and event.action == 'closed'", to: closed}
       - {if: "event.type == 'pull_request'", to: reset}
+      # `/retry`: a fresh cycle (reads CI and mergeability again).
+      - {if: "event.type == 'comment' and event.command == params.retry_command", to: retry}
       - {if: "event.type in ['comment', 'review']", to: address_human}
       - {if: "event.type in ['ci_status', 'check_run', 'workflow_run']", to: checks}
       - {if: "facts.ci.state == 'failure' and (facts.ci.failing | selectattr('url', 'startingwith', 'https://github.com/' ~ task.repo ~ '/actions/runs/') | rejectattr('name', 'regex_match', params.ci_ignore) | list | length) > 0", to: ci_fix}

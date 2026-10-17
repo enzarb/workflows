@@ -1,0 +1,16 @@
+name: review — /retry while waiting for CI starts a fresh cycle (CI and mergeability read again)
+workflow: workflows/pull_request.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects:
+    pull_requests: [{repo: acme/app, number: 30, title: "feat: x", head: enzarb/issue-1, base: main}]
+start: {type: pull_request, action: opened, number: 30}
+stubs:
+  context: [{outputs: {context: {merge_base: m0}}}]
+  review/rounds/review: [{result: {verdict: approve, must_fix: [], body: ok, checks: []}, outputs: {review_body: ok}}]
+events:
+  # Mergeability unknown: no CI runs on a conflicting PR, so nothing else would wake the task.
+  - fact: {fact: mergeable, value: null}
+    expect: {at: review/rounds/checks}
+  - event: {type: comment, body: /retry, command: retry, actor: {login: maint, can_write: true}}
+    expect: {at: review/rounds/checks, effects: [run_step, run_step, call_action, refresh_fact, refresh_fact]}
