@@ -62,6 +62,8 @@ nodes:
     next:
       - {if: "last.ok", to: done}
       - {if: "last.result.reason in ['head_moved', 'updated_branch', 'not_mergeable']", to: changed}
+      # GitHub refuses a conflicted PR with only a message ("Pull Request has merge conflicts").
+      - {if: "'conflict' in ((last.result.error or last.result.message or '') | lower)", to: changed}
       - {else: failed}
   failed:
     wait:
