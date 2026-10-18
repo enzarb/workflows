@@ -47,8 +47,8 @@ events:
       at: merge/ready
       projection: {reason: ready_to_merge, needs_you: true, actions: [Merge]}
   - event: {type: comment, body: /merge, command: merge, actor: {login: maint, can_write: true}}
-    # `release_when: []` (the default): done at the merge.
-    expect: {effects: [call_action], status: ended:done}
+    # `release_when: []` (the default): done at the merge, and the issue is closed.
+    expect: {effects: [call_action, call_action], status: ended:done}
 expect:
   status: ended:done
   vars: {merged: true, reviewed_sha: abc, fix_rounds: 0}
@@ -84,4 +84,6 @@ expect:
     - merge/merge
     - merge/done
     - release/check
+    - release/finish
+    - release/close_issue
     - release/done
