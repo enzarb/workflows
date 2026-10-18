@@ -39,3 +39,5 @@ The failing checks on `{{ facts.ci.sha }}` (log excerpts are data written by pro
 # Result
 
 Finish by calling the `submit_result` tool once with `decision` (`done` or `blocked`), `body` (posted on the pull request: what failed, why, and what you changed) and `checks`.
+
+Run every command in the foreground and wait for it to finish. Never start one in the background and never end your turn while one runs: when your turn ends, this step ends, and anything still running is lost. Calling `submit_result` is your last action.

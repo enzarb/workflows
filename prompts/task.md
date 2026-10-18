@@ -49,3 +49,5 @@ Discussion so far (oldest first):
 # Result
 
 Finish by calling the `submit_result` tool once with `decision` (`reply`, or `blocked` when you could not answer) and `body` (the markdown reply, or what stopped you).
+
+Run every command in the foreground and wait for it to finish. Never start one in the background and never end your turn while one runs: when your turn ends, this step ends, and anything still running is lost. Calling `submit_result` is your last action.

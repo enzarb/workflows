@@ -69,3 +69,5 @@ The approved plan, if there was one:
 # Result
 
 Write the markdown review to `.enzarb/out/review.md`, then call the `submit_result` tool once with `verdict` (`approve`, `request_changes` or `comment`), `must_fix` (one string per must-fix problem, `[]` when there is none), `body` (the same markdown review) and `checks` (every check you ran or tried, `{name, status: passed|failed|not_run, reason}`; every `not_run` needs a `reason`: `refused`, `missing_tool`, `timeout`, `not_attempted` or `covered_by_ci`).
+
+Run every command in the foreground and wait for it to finish. Never start one in the background and never end your turn while one runs: when your turn ends, this step ends, and anything still running is lost. Calling `submit_result` is your last action.
