@@ -1,0 +1,23 @@
+name: implement — a step that pushed but returned no result goes to checks and opens the PR
+workflow: workflows/issue.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects: {issue: {repo: acme/app, number: 9, title: "Env schema", author: alice}}
+start: {type: issue, action: opened, number: 9}
+actions:
+  open_pull_request: [{ok: true, result: {kind: pull_request, number: 10, title: "Env schema", url: "https://github.com/acme/app/pull/10"}}]
+stubs:
+  triage/triage: [{result: {decision: ready, body: s}}]
+  plan/plan: [{outputs: {plan: p}}]
+  implement/prepare: [{}]
+  implement/implement: [{git: {branch: enzarb/issue-9, head: a1, pushed: true}}]
+  implement/checks: [{}]
+  context: [{outputs: {context: {merge_base: m0, head: a1, changed_files: [src/env.ts]}}}]
+  review/rounds/review: [{result: {verdict: comment, must_fix: [], body: "ok", checks: []}}]
+events:
+  - fact: {fact: dependencies, value: []}
+  - event: {type: comment, body: /plan, command: plan, actor: {login: m, can_write: true}}
+  - event: {type: comment, body: /approve, command: approve, actor: {login: m, can_write: true}}
+    expect: {at: review/rounds/human}
+expect:
+  status: waiting
