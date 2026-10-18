@@ -3,7 +3,8 @@ description: >-
   After the merge, wait for the release events listed in `when` (`<type>` or
   `<type>.<action|state>`, e.g. `release.published`, `package.published`,
   `deployment.success`, `tag.created`, `workflow_run.completed`). With the default
-  `when: []` the phase is done at once.
+  `when: []` the phase is done at once. Then the task's issue is closed (if the merged
+  pull request did not close it).
 params:
   when: {type: list, items: string, default: []}
   retry_command: {type: string, default: retry, description: Command (and button) that runs a failed step again}
@@ -14,7 +15,7 @@ nodes:
   check:
     decide: {}
     next:
-      - {if: "params.when | length == 0", to: done}
+      - {if: "params.when | length == 0", to: finish}
       - {else: wait}
   wait:
     wait:
@@ -29,8 +30,20 @@ nodes:
       column: done
       waiting_on: external
     next:
-      - {if: "event.type in params.when or (event.type ~ '.' ~ (event.action or event.state or event.status)) in params.when", to: done}
+      - {if: "event.type in params.when or (event.type ~ '.' ~ (event.action or event.state or event.status)) in params.when", to: finish}
       - {if: "event.type == 'deployment' and event.state in ['failure', 'error'] and ('deployment.success' in params.when)", to: deploy_failed}
+  # Released: close the task's issue when the merged pull request did not (it closes only
+  # issues it references with "Closes #N"). Closing a closed issue is a no-op.
+  finish:
+    decide: {}
+    next:
+      - {if: "subjects.issue", to: close_issue}
+      - {else: done}
+  close_issue:
+    action:
+      name: close_issue
+      args: {number: "{{ subjects.issue.number }}", reason: completed}
+    next: done
   done: {end: {status: done}}
   # The deployment failed: wait for a writer's /retry (or the Retry button) instead of ending the task.
   deploy_failed:
