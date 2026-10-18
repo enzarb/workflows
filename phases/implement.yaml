@@ -24,6 +24,9 @@ nodes:
     on_limit: blocked
     next:
       - {if: "last.exit == 'success' and outputs.implement.decision == 'done' and facts.git.pushed", to: checks}
+      # Pushed work without a result (the agent ended without its structured answer): the
+      # work is there, so check it and open the PR; only an explicit `blocked` stops here.
+      - {if: "last.exit == 'success' and facts.git.pushed and outputs.implement.decision != 'blocked'", to: checks}
       - {else: blocked}
   checks:
     step: {use: steps/checks, with: {run: {param: check}}}
