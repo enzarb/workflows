@@ -13,10 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # enzarb/enzarb is private for now: ENZARB_LINT_TOKEN needs read access to it.
-      # Without the secret the action skips with a notice instead of failing.
       - uses: ./lint
         with:
           path: .
           repo: enzarb/workflows
-          token: ${{ secrets.ENZARB_LINT_TOKEN }}
