@@ -27,7 +27,7 @@ events:
       at: start_gate/wait
       projection: {reason: awaiting_start, column: backlog, needs_you: true, actions: [Start planning]}
   - event: {type: comment, body: /plan, command: plan, actor: {login: bob, can_write: false}}
-    expect: {at: start_gate/wait, effects: []}
+    expect: {at: start_gate/wait, effects: [reply]}
   - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
     expect:
       at: plan/approval

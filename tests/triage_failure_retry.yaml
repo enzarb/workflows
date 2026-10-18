@@ -16,6 +16,6 @@ events:
       status: waiting
       projection: {reason: step_failed, column: blocked, needs_you: true, actions: [Retry]}
   - event: {type: comment, body: /retry, command: retry, actor: {login: rando, can_write: false}}
-    expect: {at: triage/triage_failed, effects: []}
+    expect: {at: triage/triage_failed, effects: [reply]}
   - event: {type: comment, body: /retry, command: retry, actor: {login: maint, can_write: true}}
     expect: {at: plan/plan, status: running}
