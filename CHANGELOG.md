@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- Environment failures wait for the platform and resume. Every agent step (`address`,
+  `breakdown`, `ci_fix`, `implement`, `plan`, `resolve_conflicts`, `review`, `task`,
+  `triage`) opts in to `platform_wait`: a `disk_full` failure waits until
+  `sandbox.disk_pct < 85`, an `oom` until `sandbox.healthy`, then the same run resumes. No
+  timeout, no retry spent, no cap.
+
+### Added
+- `checks/platform-wait-long.yaml`: a liveness finding for a long platform wait.
+
+Requires an engine with enzarb/enzarb#332 (the step schema rejects `platform_wait` before).
+
 ## 1.1.0
 
 ### Changed
