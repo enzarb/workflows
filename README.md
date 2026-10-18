@@ -171,10 +171,9 @@ In another repository's CI:
 
 ```yaml
 - uses: enzarb/workflows/lint@v1
-  with:
-    token: ${{ secrets.ENZARB_LINT_TOKEN }}   # read access to enzarb/enzarb while it is private
 ```
 
 The action builds `enzarb-lint` from enzarb/enzarb at a pinned ref (`enzarb-ref`), serves
 `enzarb/workflows` imports from a checkout of `library-ref` (default `v1`), and runs `check`
-and `test`. Without a token it skips with a notice.
+and `test`. enzarb/enzarb and enzarb/workflows are public, so no token is needed (`token` is an
+optional override for private forks). A failed checkout or build fails the step.

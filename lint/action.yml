@@ -20,63 +20,44 @@ inputs:
     default: v1
   enzarb-ref:
     description: enzarb/enzarb ref to build enzarb-lint from
-    default: c7bbd10978812c326422960ef99b8edd29ba20d9
+    default: af9e2fb38ef8c6dd72cadfc81f2ebdac4f1d98e4
   token:
-    description: Token with read access to enzarb/enzarb (private for now). Without it the step is skipped with a notice.
+    description: >-
+      Optional token for the checkouts. enzarb/enzarb and enzarb/workflows are public, so the
+      default (the job's token) is enough; set it only for private forks.
     default: ""
 runs:
   using: composite
   steps:
-    - name: Check for a token
-      id: gate
-      shell: bash
-      env:
-        TOKEN: ${{ inputs.token }}
-      run: |
-        if [ -z "$TOKEN" ]; then
-          echo "::notice title=enzarb-lint skipped::no token with read access to enzarb/enzarb; set the input 'token'"
-          echo "run=false" >> "$GITHUB_OUTPUT"
-        else
-          echo "run=true" >> "$GITHUB_OUTPUT"
-        fi
     - name: Fetch enzarb-lint sources
-      if: steps.gate.outputs.run == 'true'
       uses: actions/checkout@v4
       with:
         repository: enzarb/enzarb
         ref: ${{ inputs.enzarb-ref }}
-        token: ${{ inputs.token }}
+        token: ${{ inputs.token || github.token }}
         path: .enzarb-lint-src
-        # The workflows workspace has path deps on proto/, operator/ and connectors/.
-        sparse-checkout: |
-          workflows
-          proto
-          operator
-          connectors
     - name: Fetch the standard library
-      if: steps.gate.outputs.run == 'true' && inputs.repo != 'enzarb/workflows'
+      if: inputs.repo != 'enzarb/workflows'
       uses: actions/checkout@v4
       with:
         repository: enzarb/workflows
         ref: ${{ inputs.library-ref }}
-        token: ${{ inputs.token }}
+        token: ${{ inputs.token || github.token }}
         path: .enzarb-std
     - name: Cache the build
-      if: steps.gate.outputs.run == 'true'
       uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
-          .enzarb-lint-src/workflows/target
+          .enzarb-lint-src/target
         key: enzarb-lint-${{ runner.os }}-${{ inputs.enzarb-ref }}
     - name: Build enzarb-lint
-      if: steps.gate.outputs.run == 'true'
       shell: bash
-      working-directory: .enzarb-lint-src/workflows
+      # One root Cargo workspace (enzarb/enzarb#257); enzarb-flow has no path dependencies.
+      working-directory: .enzarb-lint-src
       run: cargo build --release -p enzarb-flow --bin enzarb-lint
     - name: Lint
-      if: steps.gate.outputs.run == 'true'
       shell: bash
       env:
         LINT_PATH: ${{ inputs.path }}
@@ -85,7 +66,7 @@ runs:
         LINT_TEST: ${{ inputs.test }}
       run: |
         set -euo pipefail
-        bin="$GITHUB_WORKSPACE/.enzarb-lint-src/workflows/target/release/enzarb-lint"
+        bin="$GITHUB_WORKSPACE/.enzarb-lint-src/target/release/enzarb-lint"
         args=(--repo "$LINT_REPO" --format github)
         if [ -d "$GITHUB_WORKSPACE/.enzarb-std" ]; then
           args+=(--library "enzarb/workflows=$GITHUB_WORKSPACE/.enzarb-std")
