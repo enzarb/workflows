@@ -65,6 +65,8 @@ Fix these failures first.
 
 # Result
 
+Environment problems: if you could not do your work because of the environment (disk full, out of memory, a tool missing from the sandbox), say so in the optional `environment` field of the result (`{kind, detail}`), not as a code problem (`blocked`, a failed check). The field is advisory: the sandbox decides what happens next.
+
 Run every command in the foreground and wait for it to finish. Never start one in the background and never end your turn while one runs: when your turn ends, this step ends, and anything still running is lost. Calling `submit_result` is your last action.
 
 Finish by calling the `submit_result` tool once:

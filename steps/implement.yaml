@@ -18,6 +18,12 @@ result:
       decision: {type: string, enum: [done, blocked]}
       title: {type: string, maxLength: 100, description: Conventional Commit PR title}
       body: {type: string, description: PR description, or why it is blocked}
+      environment:
+        type: object
+        description: Advisory report of an environment problem (disk full, OOM, missing tool); the sandbox decides the routing
+        properties:
+          kind: {type: string}
+          detail: {type: string}
       checks:
         type: array
         items:
