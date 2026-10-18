@@ -1,7 +1,8 @@
 version: 1
 description: >-
   Epic path: write the sub-issue breakdown, post it, wait for approval (feedback re-plans),
-  create the sub-issues with `create_issues`, then wait until every sub-issue's task ended.
+  create the sub-issues with `create_issues`, then wait until every sub-issue's task ended and
+  close the epic's issue.
 params:
   prompt: {type: prompt, default: {file: prompts/breakdown.md}}
   max_subissues: {type: integer, default: 8}
@@ -64,7 +65,14 @@ nodes:
       waiting_on: external
     next:
       - {if: "event.type == 'issue'", to: closed}
-      - {if: "event.type == 'all_children_ended'", to: done}
+      - {if: "event.type == 'all_children_ended'", to: close_epic}
+  # Every sub-issue's task ended: the epic is finished, so close its issue. A failed close
+  # (closed by hand meanwhile, a provider error) still ends the task.
+  close_epic:
+    action:
+      name: close_issue
+      args: {number: "{{ subjects.issue.number }}", reason: completed}
+    next: done
   done: {end: {status: done}}
   closed: {end: {status: closed}}
   # The breakdown failed: wait for a writer's /retry (or the Retry button) instead of ending the task.

@@ -1,4 +1,4 @@
-name: epic — triage says epic, the breakdown is revised and approved, sub-issues are created, the epic ends with its children
+name: epic — triage says epic, the breakdown is revised and approved, sub-issues are created, the epic closes and ends with its children
 workflow: workflows/issue.yaml
 document:
   task: {repo: acme/app, default_branch: main}
@@ -26,8 +26,9 @@ events:
   - event: {type: comment, body: /approve, command: approve, actor: {login: maint, can_write: true}}
     expect: {at: breakdown/children, effects: [call_action], projection: {reason: awaiting_children, column: in_progress}}
   - event: {type: all_children_ended, statuses: {t-21: done, t-22: done}}
+    expect: {effects: [call_action]}
 expect:
   status: ended:done
   path: [dependencies/check, dependencies/wait, dependencies/done, start_gate/wait, start_gate/done, triage/triage, triage/epic,
          breakdown/breakdown, breakdown/post, breakdown/approval, breakdown/breakdown, breakdown/post, breakdown/approval,
-         breakdown/create, breakdown/children, breakdown/done]
+         breakdown/create, breakdown/children, breakdown/close_epic, breakdown/done]
