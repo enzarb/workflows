@@ -17,7 +17,7 @@ events:
     expect: {at: merge/ready, projection: {actions: [Merge], needs_you: true}}
   # Only writers merge.
   - event: {type: comment, body: /merge, command: merge, actor: {login: carol, can_write: false}}
-    expect: {at: merge/ready, effects: []}
+    expect: {at: merge/ready, effects: [reply]}
   - event: {type: comment, body: /merge, command: merge, actor: {login: maint, can_write: true}}
     expect: {status: ended:done}
 expect:

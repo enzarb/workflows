@@ -18,7 +18,7 @@ events:
       effects: [run_step, run_step, run_step]
       projection: {reason: conflict_parked, column: blocked, needs_you: true, actions: [Retry]}
   - event: {type: comment, body: /retry, command: retry, actor: {login: bob, can_write: false}}
-    expect: {at: review/rounds/conflict_parked, effects: []}
+    expect: {at: review/rounds/conflict_parked, effects: [reply]}
   - event: {type: comment, body: /retry, command: retry, actor: {login: maint, can_write: true}}
     expect: {at: review/rounds/checks}
   # The person resolved it and pushed: the new head is reviewed from scratch.

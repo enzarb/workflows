@@ -12,7 +12,7 @@ events:
       projection: {reason: blocked_by_dependencies, column: blocked, waiting_on: external, text: "Waiting for the issues this one depends on to finish"}
   # Someone without write access cannot unblock.
   - event: {type: comment, body: /unblock, command: unblock, actor: {login: bob, can_write: false}}
-    expect: {at: dependencies/wait, effects: []}
+    expect: {at: dependencies/wait, effects: [reply]}
   - event: {type: dependency_changed, task: t-1, status: waiting}
     expect: {at: dependencies/wait, effects: [refresh_fact]}
   - fact: {fact: dependencies, value: [{task: t-1, status: waiting}, {task: t-2, status: done, ended: true}]}

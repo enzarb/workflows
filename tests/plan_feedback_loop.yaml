@@ -19,7 +19,7 @@ events:
   - event: {type: comment, body: "plan v2", actor: {login: enzarb, bot: true}}
     expect: {at: plan/approval, effects: []}
   - event: {type: comment, body: /approve, command: approve, actor: {login: alice, can_write: false}}
-    expect: {at: plan/approval, effects: []}
+    expect: {at: plan/approval, effects: [reply]}
   - event: {type: comment, body: /approve, command: approve, actor: {login: maint, can_write: true}}
     expect: {at: implement/prepare, status: running}
 expect:
