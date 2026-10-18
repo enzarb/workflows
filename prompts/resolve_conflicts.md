@@ -38,3 +38,5 @@ Description:
 # Result
 
 Finish by calling the `submit_result` tool once with `decision` (`done`: the merge commit is on `{{ pr.head }}`; `blocked`: it needs a human decision) and `body` (posted on the pull request: what you kept from each side and which checks ran).
+
+Run every command in the foreground and wait for it to finish. Never start one in the background and never end your turn while one runs: when your turn ends, this step ends, and anything still running is lost. Calling `submit_result` is your last action.

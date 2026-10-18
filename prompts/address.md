@@ -61,3 +61,5 @@ All discussion so far (oldest first). Other unresolved comments may be here; add
 # Result
 
 Finish by calling the `submit_result` tool once with `decision` (`done`: commits are on `{{ pr.head }}`; `blocked`: you could not make progress), `body` (the comment posted on the pull request: one line per point saying what you did or why you did not) and `checks` (`{name, status, reason}` for every check you ran or tried).
+
+Run every command in the foreground and wait for it to finish. Never start one in the background and never end your turn while one runs: when your turn ends, this step ends, and anything still running is lost. Calling `submit_result` is your last action.
