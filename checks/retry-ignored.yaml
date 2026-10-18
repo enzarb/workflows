@@ -1,0 +1,9 @@
+version: 1
+id: retry-ignored
+kind: dead_wait
+severity: warning
+text: "A command reached {node} 15 minutes ago and nothing happened"
+when:
+  all:
+    - node: review/rounds/checks
+    - command_ignored: {for: 15m}
