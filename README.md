@@ -46,7 +46,7 @@ Set by a binding's `with` (or a scenario's `params`).
 | Workflow | Param (default) | What |
 |---|---|---|
 | `issue` | `epic` (false) | Treat the issue as an epic (the `epics` binding sets it) |
-| | `epic_allowed` (true) | May become an epic; the `issues` binding sets false for sub-issues of an epic |
+| | `epic_allowed` (true) | May become an epic; the `issues` and `adopted_issues` bindings set false for sub-issues of an epic |
 | | `epic_label` (epic) | Label that marks an epic later on |
 | | `stale_after` (14d) | Triage questions go stale after this duration |
 | | `max_rounds` (3) | Automatic fix rounds on the review's must-fix findings |
@@ -106,7 +106,8 @@ A binding with the same `id` as a lower one replaces it; `{id: <id>, disabled: t
 |---|---|---|---|
 | `epics` | `issue` | opened with the `epic` label, not a sub-issue | `workflows/issue` with `epic: true` |
 | `issues` | `issue` | opened; `epic_allowed` is false when `relations` has a `parent` (a sub-issue) | `workflows/issue` |
-| `adopted_prs` / `adopted_issues` | `adopted` | by subject kind | `workflows/pull_request` / `workflows/issue` |
+| `adopted_prs` | `adopted` | subject is a pull request | `workflows/pull_request` |
+| `adopted_issues` | `adopted` | subject is an issue; `epic_allowed` is false when `relations` has a `parent` (a sub-issue) | `workflows/issue` |
 | `pull_requests` | `pull_request` | opened, references no issue | `workflows/pull_request` |
 | `mentions` | `comment` | `event.mentioned` (the instance's bot handle), not a bot | `workflows/mention` |
 

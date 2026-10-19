@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+- `adopted_issues` passes `epic_allowed: false` for sub-issues (a `parent` relation), like
+  `issues`, so an adopted sub-issue cannot be triaged as an epic and nest.
+
 ### Changed
 - Environment failures wait for the platform and resume. Every agent step (`address`,
   `breakdown`, `ci_fix`, `implement`, `plan`, `resolve_conflicts`, `review`, `task`,
