@@ -7,9 +7,12 @@ start: {type: issue, action: opened, number: 7}
 events:
   - fact: {fact: dependencies, value: []}
   - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect: {at: start_gate/verify}
+  - fact: {fact: dependencies, value: []}
     expect: {at: triage/triage, status: running}
   - event: {type: issue, action: closed, number: 7}
     expect: {effects: [stop_step], status: ended:closed}
 expect:
   status: ended:closed
-  path: [dependencies/check, dependencies/wait, dependencies/done, start_gate/wait, start_gate/done, triage/triage]
+  path: [dependencies/check, dependencies/wait, dependencies/done, start_gate/wait, start_gate/verify,
+         start_gate/done, triage/triage]

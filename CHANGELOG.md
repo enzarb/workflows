@@ -3,6 +3,13 @@
 ## Unreleased
 
 ### Fixed
+- `/plan`, `/approve` and `/merge` re-check an issue's dependencies (`check_dependencies`, on in
+  `workflows/issue`): the command waits at `verify` (`blocked_by_dependencies`) until nothing the
+  issue depends on is unfinished, so a dependency that appears after the first gate blocks the
+  work. `/unblock` overrides.
+- The `epic-subissues-without-deps` check fires only for a sub-issue whose epic breakdown
+  declared `depends_on` that was never recorded (`declared_dependencies`, needs enzarb
+  workflows >= the release that adds it). A sub-issue declared independent no longer files an issue.
 - `adopted_issues` passes `epic_allowed: false` for sub-issues (a `parent` relation), like
   `issues`, so an adopted sub-issue cannot be triaged as an epic and nest.
 

@@ -13,6 +13,8 @@ stubs:
 events:
   - fact: {fact: dependencies, value: []}
   - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect: {at: start_gate/verify}
+  - fact: {fact: dependencies, value: []}
     expect: {at: plan/approval}
   - event: {type: comment, body: /epic, command: epic, actor: {login: alice, can_write: false}}
     expect: {at: plan/approval, effects: [reply]}

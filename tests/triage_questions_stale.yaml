@@ -14,6 +14,8 @@ stubs:
 events:
   - fact: {fact: dependencies, value: []}
   - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect: {at: start_gate/verify}
+  - fact: {fact: dependencies, value: []}
     expect:
       at: triage/answers
       effects: [run_step, call_action, set_timer]

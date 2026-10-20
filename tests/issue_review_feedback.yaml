@@ -19,7 +19,11 @@ stubs:
 events:
   - fact: {fact: dependencies, value: []}
   - event: {type: comment, body: /plan, command: plan, actor: {login: m, can_write: true}}
+    expect: {at: start_gate/verify}
+  - fact: {fact: dependencies, value: []}
   - event: {type: comment, body: /approve, command: approve, actor: {login: m, can_write: true}}
+    expect: {at: plan/verify}
+  - fact: {fact: dependencies, value: []}
     expect: {at: review/rounds/checks}
   - event: {type: review, number: 8, state: changes_requested, body: "Rename parse_cfg.", actor: {login: m, can_write: true}}
     expect: {at: review/rounds/checks, effects: [run_step, call_action, run_step, run_step, call_action, refresh_fact, refresh_fact]}
@@ -28,5 +32,7 @@ events:
   - fact: {fact: ci, value: {sha: a2, state: success}}
     expect: {at: merge/ready}
   - event: {type: comment, body: /merge, command: merge, actor: {login: m, can_write: true}}
+    expect: {at: merge/verify}
+  - fact: {fact: dependencies, value: []}
 expect:
   status: ended:done

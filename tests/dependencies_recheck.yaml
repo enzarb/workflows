@@ -1,0 +1,60 @@
+name: dependencies re-checked at /plan, /approve and /merge — a dependency added later blocks each; /unblock overrides
+workflow: workflows/issue.yaml
+document:
+  task: {repo: acme/app, default_branch: main}
+  subjects:
+    issue: {repo: acme/app, number: 7, title: Second part, author: alice, url: "https://github.com/acme/app/issues/7"}
+actions:
+  open_pull_request: [{ok: true, result: {kind: pull_request, number: 8, title: "fix(app): x", url: "https://github.com/acme/app/pull/8"}}]
+start: {type: issue, action: opened, number: 7}
+stubs:
+  triage/triage: [{result: {decision: ready, body: ok}}]
+  plan/plan: [{outputs: {plan: "## Summary\nDo it."}}]
+  implement/prepare: [{}]
+  implement/implement:
+    - result: {decision: done, title: "fix(app): x", body: "Closes #7"}
+      git: {branch: enzarb/issue-7, head: abc, pushed: true}
+  implement/checks: [{}]
+  context: [{outputs: {context: {merge_base: m0, head: abc, affected: [app], changed_files: [src/main.rs]}}}]
+  review/rounds/review:
+    - result: {verdict: approve, must_fix: [], body: LGTM, checks: []}
+      outputs: {review_body: LGTM}
+events:
+  - fact: {fact: dependencies, value: []}
+    expect: {at: start_gate/wait}
+  # A dependency appeared after the gate: /plan waits for it instead of starting triage.
+  - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect: {at: start_gate/verify, status: waiting}
+  - fact: {fact: dependencies, value: [{task: t-1, status: running}]}
+    expect:
+      at: start_gate/verify
+      projection: {reason: blocked_by_dependencies, column: blocked, waiting_on: external}
+  - event: {type: dependency_changed, task: t-1, status: done}
+    expect: {at: start_gate/verify, effects: [refresh_fact]}
+  - fact: {fact: dependencies, value: [{task: t-1, status: done, ended: true}]}
+    expect: {at: plan/approval}
+  # The same at /approve.
+  - event: {type: comment, body: /approve, command: approve, actor: {login: maint, can_write: true}}
+    expect: {at: plan/verify}
+  - fact: {fact: dependencies, value: [{task: t-2, status: waiting}]}
+    expect:
+      at: plan/verify
+      projection: {reason: blocked_by_dependencies, column: blocked}
+  # A writer can start anyway.
+  - event: {type: comment, body: /unblock, command: unblock, actor: {login: maint, can_write: true}}
+    expect: {at: review/rounds/checks}
+  - fact: {fact: ci, value: {sha: abc, state: success}}
+  - fact: {fact: mergeable, value: true}
+  - fact: {fact: ci, value: {sha: abc, state: success}}
+    expect: {at: merge/ready}
+  # And at /merge.
+  - event: {type: comment, body: /merge, command: merge, actor: {login: maint, can_write: true}}
+    expect: {at: merge/verify}
+  - fact: {fact: dependencies, value: [{task: t-3, status: waiting}]}
+    expect:
+      at: merge/verify
+      projection: {reason: blocked_by_dependencies, column: blocked}
+  - fact: {fact: dependencies, value: [{task: t-3, status: done, ended: true}]}
+    expect: {at: release/done}
+expect:
+  status: ended:done
