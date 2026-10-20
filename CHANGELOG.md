@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed
+- At `awaiting_review` (a person has to look at the pull request) the button is **Review**, which
+  opens the pull request's files page, instead of Retry. The inherited Retry button is hidden
+  there (`hidden` command); a typed `/retry` still restarts the review cycle. Needs an enzarb
+  workflows release with link actions and hidden commands. `round_limit` keeps Retry.
+
 ### Removed
 - The `external-idle` check. It could not tell an expected wait (an epic waiting on its
   sub-issues, a task waiting for a release) from a stuck one, and filed an issue for each.
