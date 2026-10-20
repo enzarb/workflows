@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Removed
+- The `external-idle` check. It could not tell an expected wait (an epic waiting on its
+  sub-issues, a task waiting for a release) from a stuck one, and filed an issue for each.
+
 ### Fixed
 - `/plan`, `/approve` and `/merge` re-check an issue's dependencies (`check_dependencies`, on in
   `workflows/issue`): the command waits at `verify` (`blocked_by_dependencies`) until nothing the
