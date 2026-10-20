@@ -31,7 +31,7 @@ events:
       projection: {reason: implement_blocked, column: blocked, text: "The config format is undocumented.", actions: [Retry]}
   - event: {type: comment, body: /retry, command: retry, actor: {login: m, can_write: true}}
     # The review is a plain `comment` with no must-fix items: it waits on a person.
-    expect: {at: review/rounds/human, projection: {reason: awaiting_review, needs_you: true}}
+    expect: {at: review/rounds/human, projection: {reason: awaiting_review, needs_you: true, actions: [Review], commands: [restart, cancel]}}
   # Closing the PR without merging ends the task (the workflow's `on:` handler).
   - event: {type: pull_request, action: closed, number: 8, merged: false}
 expect:
