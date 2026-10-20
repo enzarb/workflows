@@ -20,7 +20,11 @@ stubs:
 events:
   - fact: {fact: dependencies, value: []}
   - event: {type: comment, body: /plan, command: plan, actor: {login: m, can_write: true}}
+    expect: {at: start_gate/verify}
+  - fact: {fact: dependencies, value: []}
   - event: {type: comment, body: /approve, command: approve, actor: {login: m, can_write: true}}
+    expect: {at: plan/verify}
+  - fact: {fact: dependencies, value: []}
     expect: {at: implement/blocked}
   - event: {type: comment, body: /retry, command: retry, actor: {login: m, can_write: true}}
     expect: {at: review/rounds/human}

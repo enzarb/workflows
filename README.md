@@ -24,7 +24,9 @@ templates over the task document (`docs/workflows/task-document.md`).
 ## Workflows
 
 - **`issue`**: dependencies → start gate (`/plan`) → triage → plan (approval) → implement →
-  review → merge → release. Triage `epic`, `/epic` during plan approval, the `epic` label
+  review → merge → release. `/plan`, `/approve` and `/merge` each re-check the issue's
+  dependencies first (`check_dependencies`), so a dependency added or reopened after the first
+  gate still blocks the work; `/unblock` from a writer overrides. Triage `epic`, `/epic` during plan approval, the `epic` label
   (from a writer, any time) or the `epics` binding's `epic: true` go to the breakdown
   instead, and `vars.epic` remembers it across phases: sub-issues are created on approval,
   related to the epic's task as children (`parent` from their side), and the epic ends when
@@ -118,9 +120,9 @@ Every phase also has the implicit exits `done` (next phase) and `limit_reached`.
 | Phase | Params (default) | Exits | Waits (reason · column) |
 |---|---|---|---|
 | `dependencies` | `done_statuses` ([done, merged, released]), `unblock_command` (unblock) | | `blocked_by_dependencies` · blocked; button "Start anyway". Dependencies already known to be finished pass at once (`decide`) |
-| `start_gate` | `command` (plan), `label` (plan), `button` (Start planning) | `closed` | `awaiting_start` · backlog |
+| `start_gate` | `command` (plan), `label` (plan), `button` (Start planning), `check_dependencies` (false) | `closed` | `awaiting_start` · backlog. With `check_dependencies` the command first refreshes `dependencies` and waits (`blocked_by_dependencies` · blocked) while anything is unfinished |
 | `triage` | `prompt`, `epic` (false), `epic_allowed` (true), `stale_after` (14d) | `epic`, `duplicate`, `closed`, `failed` | `awaiting_answers` (timer `stale_after`), `stale` · blocked |
-| `plan` | `prompt`, `approve_command` (approve), `approve_label` (Approve), `epic_command` (epic), `epic_allowed` (true) | `epic`, `closed`, `failed` | `awaiting_approval` · plan; any other comment re-plans. `vars.epic` leaves through `epic` at once |
+| `plan` | `prompt`, `approve_command` (approve), `approve_label` (Approve), `epic_command` (epic), `epic_allowed` (true), `check_dependencies` (false) | `epic`, `closed`, `failed` | `awaiting_approval` · plan; any other comment re-plans. `vars.epic` leaves through `epic` at once. With `check_dependencies`, `/approve` waits for unfinished dependencies first (`/unblock` overrides) |
 | `breakdown` | `prompt`, `max_subissues` (8), `approve_command` (approve), `approve_label` (Create sub-issues) | `closed`, `failed` | `awaiting_approval` · plan; `awaiting_children` · in progress. `create_issues` result is `outputs.children`; each issue is related (`parent`) |
 | `implement` | `prompt`, `prepare` (mise run prepare), `check` (mise run check), `retry_command` (retry), `retry_label` (Retry), `draft` (false), `max_rounds` (3: attempts against failing checks) | `closed` | `implement_blocked` · blocked. The opened PR is `outputs.pull_request` and a subject; branch `enzarb/issue-<n>` |
 | `review` | `review_prompt`, `address_prompt`, `ci_fix_prompt`, `resolve_prompt`, `ci_ignore` (`(?i)copilot`, a regex), `retry_command` (retry), `max_rounds` (3), `max_ci_rounds` (3), `max_conflict_attempts` (2) | `merged`, `closed` | `awaiting_ci` · review; `awaiting_review`, `round_limit` · review; `ci_failed`, `conflict_parked` · blocked |

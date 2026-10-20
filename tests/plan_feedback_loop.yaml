@@ -12,6 +12,8 @@ stubs:
 events:
   - fact: {fact: dependencies, value: []}
   - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect: {at: start_gate/verify}
+  - fact: {fact: dependencies, value: []}
     expect: {at: plan/approval, outputs: {plan: "plan v1"}}
   - event: {type: comment, body: "Please also handle the empty file.", actor: {login: alice}}
     expect: {at: plan/approval, effects: [run_step, call_action], outputs: {plan: "plan v2"}}
@@ -21,7 +23,10 @@ events:
   - event: {type: comment, body: /approve, command: approve, actor: {login: alice, can_write: false}}
     expect: {at: plan/approval, effects: [reply]}
   - event: {type: comment, body: /approve, command: approve, actor: {login: maint, can_write: true}}
+    expect: {at: plan/verify}
+  - fact: {fact: dependencies, value: []}
     expect: {at: implement/prepare, status: running}
 expect:
-  path: [dependencies/check, dependencies/wait, dependencies/done, start_gate/wait, start_gate/done, triage/triage, triage/done,
-         plan/check, plan/plan, plan/post, plan/approval, plan/plan, plan/post, plan/approval, plan/done, implement/prepare]
+  path: [dependencies/check, dependencies/wait, dependencies/done, start_gate/wait, start_gate/verify,
+         start_gate/done, triage/triage, triage/done, plan/check, plan/plan, plan/post, plan/approval,
+         plan/plan, plan/post, plan/approval, plan/verify, plan/done, implement/prepare]

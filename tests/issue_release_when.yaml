@@ -18,13 +18,19 @@ actions:
 events:
   - fact: {fact: dependencies, value: []}
   - event: {type: comment, body: /plan, command: plan, actor: {login: m, can_write: true}}
+    expect: {at: start_gate/verify}
+  - fact: {fact: dependencies, value: []}
   - event: {type: comment, body: /approve, command: approve, actor: {login: m, can_write: true}}
+    expect: {at: plan/verify}
+  - fact: {fact: dependencies, value: []}
     expect: {at: review/rounds/checks}
   - fact: {fact: ci, value: {sha: a1, state: success}}
   - fact: {fact: mergeable, value: true}
   - fact: {fact: ci, value: {sha: a1, state: success}}
     expect: {at: merge/ready}
   - event: {type: comment, body: /merge, command: merge, actor: {login: m, can_write: true}}
+    expect: {at: merge/verify}
+  - fact: {fact: dependencies, value: []}
     expect: {at: release/wait, vars: {merged: true}, projection: {reason: awaiting_release, text: "Merged; waiting for release.published"}}
   - event: {type: issue, action: closed, number: 7}
     expect: {at: release/wait, status: waiting}

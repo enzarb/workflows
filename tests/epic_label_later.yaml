@@ -17,7 +17,9 @@ events:
   - event: {type: label, action: added, label: epic, actor: {login: maint, can_write: true}}
     expect: {at: start_gate/wait, effects: [], vars: {epic: true}}
   - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect: {at: start_gate/verify}
+  - fact: {fact: dependencies, value: []}
     expect: {at: breakdown/approval}
 expect:
-  path: [dependencies/check, dependencies/wait, dependencies/done, start_gate/wait, start_gate/done, triage/triage, triage/epic,
-         breakdown/breakdown, breakdown/post, breakdown/approval]
+  path: [dependencies/check, dependencies/wait, dependencies/done, start_gate/wait, start_gate/verify,
+         start_gate/done, triage/triage, triage/epic, breakdown/breakdown, breakdown/post, breakdown/approval]

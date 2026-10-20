@@ -9,7 +9,10 @@ stubs:
 events:
   - fact: {fact: dependencies, value: []}
   - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect: {at: start_gate/verify}
+  - fact: {fact: dependencies, value: []}
     expect: {effects: [run_step, call_action]}
 expect:
   status: ended:duplicate
-  path: [dependencies/check, dependencies/wait, dependencies/done, start_gate/wait, start_gate/done, triage/triage, triage/post_duplicate, triage/duplicate]
+  path: [dependencies/check, dependencies/wait, dependencies/done, start_gate/wait, start_gate/verify,
+         start_gate/done, triage/triage, triage/post_duplicate, triage/duplicate]

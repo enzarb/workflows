@@ -29,11 +29,15 @@ events:
   - event: {type: comment, body: /plan, command: plan, actor: {login: bob, can_write: false}}
     expect: {at: start_gate/wait, effects: [reply]}
   - event: {type: comment, body: /plan, command: plan, actor: {login: maint, can_write: true}}
+    expect: {at: start_gate/verify}
+  - fact: {fact: dependencies, value: []}
     expect:
       at: plan/approval
       effects: [run_step, run_step, call_action]
       projection: {reason: awaiting_approval, column: plan, actions: [Approve], artifacts: [Plan]}
   - event: {type: comment, body: /approve, command: approve, actor: {login: maint, can_write: true}}
+    expect: {at: plan/verify}
+  - fact: {fact: dependencies, value: []}
     expect:
       at: review/rounds/checks
       effects: [run_step, run_step, run_step, call_action, link_subject, run_step, run_step, call_action, refresh_fact, refresh_fact]
@@ -48,6 +52,8 @@ events:
       projection: {reason: ready_to_merge, needs_you: true, actions: [Merge]}
   - event: {type: comment, body: /merge, command: merge, actor: {login: maint, can_write: true}}
     # `release_when: []` (the default): done at the merge, and the issue is closed.
+    expect: {at: merge/verify}
+  - fact: {fact: dependencies, value: []}
     expect: {effects: [call_action, call_action], status: ended:done}
 expect:
   status: ended:done
@@ -58,6 +64,7 @@ expect:
     - dependencies/wait
     - dependencies/done
     - start_gate/wait
+    - start_gate/verify
     - start_gate/done
     - triage/triage
     - triage/done
@@ -65,6 +72,7 @@ expect:
     - plan/plan
     - plan/post
     - plan/approval
+    - plan/verify
     - plan/done
     - implement/prepare
     - implement/implement
@@ -81,6 +89,7 @@ expect:
     - review/done
     - merge/check
     - merge/ready
+    - merge/verify
     - merge/merge
     - merge/done
     - release/check
