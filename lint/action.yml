@@ -20,7 +20,7 @@ inputs:
     default: v1
   enzarb-ref:
     description: enzarb/enzarb ref to build enzarb-lint from
-    default: 0b6f85bc5a32d0ed19bf4d99fcd338157da6111e
+    default: 17d771c21e94f1afa5719acd696c00f65926c3d8
   token:
     description: >-
       Optional token for the checkouts. enzarb/enzarb and enzarb/workflows are public, so the
